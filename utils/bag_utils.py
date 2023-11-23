@@ -4,7 +4,7 @@ import torch
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 from typing import *
-
+from sklearn.model_selection import train_test_split
 
 class Bags(data_utils.Dataset):
 
@@ -25,7 +25,7 @@ class Bags(data_utils.Dataset):
         Initialization function for the class
 
             Args:
-                dataset (str): A dataset used for genrating bag dataset. possible dataset: MNIST、Cifar10
+                dataset (str): A dataset used for genrating bag dataset. possible dataset: MNIST、Cifar10、annthyroid
                 num_bag: Number of bags to generate
                 mean_bag_length: Mean of bags length
                 var_bag_length: Variance of bags length
@@ -39,8 +39,8 @@ class Bags(data_utils.Dataset):
                 ValueError: Raises an exception when some of the listed arguments do not follow the allowed conventions
         '''
 
-        if dataset not in ['MNIST', 'Cifar10']:
-            raise ValueError("Invalid dataset. possible dataset: MNIST、Cifar10")
+        if dataset not in ['MNIST', 'Cifar10', 'annthyroid']:
+            raise ValueError("Invalid dataset. possible dataset: MNIST、Cifar10、annthyroid")
 
         self.dataset = dataset
         self.mean_bag_length = mean_bag_length
@@ -88,6 +88,16 @@ class Bags(data_utils.Dataset):
             self.size = self.data.data.shape[0]
             self.target = 9
 
+        elif self.dataset == "annthyroid":
+
+            data = np.load("dataset/ADBench/2_annthyroid.npz", allow_pickle=True)
+            X, y = data['X'], data['y']
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
+
+            if self.train:
+                self.data = {'data': X_train, 'targets': y_train}
+            else:
+                self.data = {'data': X_test, 'targets': y_test}
 
     def create_bag(self):
 
