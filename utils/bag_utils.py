@@ -6,6 +6,23 @@ from torchvision import datasets, transforms
 from typing import *
 from sklearn.model_selection import train_test_split
 
+class ADBenchDataset(object):
+
+    r'''
+    An object class for store dataset obtain from ADBench.
+
+    '''
+
+    def __init__(self):
+        r'''
+               Initialization function for the class
+
+        '''
+
+        self.data = None
+        self.targets = None
+
+
 class Bags(data_utils.Dataset):
 
     r'''
@@ -94,10 +111,17 @@ class Bags(data_utils.Dataset):
             X, y = data['X'], data['y']
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
 
+            self.data = ADBenchDataset()
+
             if self.train:
-                self.data = {'data': X_train, 'targets': y_train}
+                self.data.data = X_train
+                self.data.targets = y_train
             else:
-                self.data = {'data': X_test, 'targets': y_test}
+                self.data.data = X_test
+                self.data.targets = y_test
+
+            self.size = self.data.data.shape[0]
+            self.target = 1
 
     def create_bag(self):
 
