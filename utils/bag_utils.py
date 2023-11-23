@@ -35,6 +35,7 @@ class Bags(data_utils.Dataset):
                  num_bag: Optional[int]=250,
                  mean_bag_length: Optional[int]=10,
                  var_bag_length: Optional[int]=2,
+                 n_pos: Optional[int]=50,
                  seed: Optional[int]=666,
                  train: Optional[bool]=True):
 
@@ -46,6 +47,7 @@ class Bags(data_utils.Dataset):
                 num_bag: Number of bags to generate
                 mean_bag_length: Mean of bags length
                 var_bag_length: Variance of bags length
+                n_pos: Number of positive bags
                 seed: Random seed
                 train: whether the dataset is used for training model or testing model
 
@@ -62,6 +64,7 @@ class Bags(data_utils.Dataset):
         self.dataset = dataset
         self.mean_bag_length = mean_bag_length
         self.var_bag_length = var_bag_length
+        self.n_pos = n_pos
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)
         self.train = train
@@ -69,6 +72,16 @@ class Bags(data_utils.Dataset):
         self.bags, self.labels = self.create_bag()
 
         # self.__getitem__(0)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, index):
+
+        bag = self.bags[index]
+        label = [max(self.bags_labels[index]), self.labels[index]]
+
+        return bag, label
 
     def obtain_dataset(self):
 
@@ -123,6 +136,26 @@ class Bags(data_utils.Dataset):
             self.size = self.data.data.shape[0]
             self.target = 1
 
+    def create_bag_label(self, labels_list: Optional[list] = None):
+
+        r'''
+
+        Instance method for generating bag pu (positive and unlabeled) labels
+
+            Args:
+            labels_list: Instance labels list for generating bag pu labels.
+
+            Returns:
+                    None
+        '''
+
+        pos = [max(item) for item in labels_list]
+        pos_idx = np.random.choice(np.where(pos)[0], size=self.n_pos, replace=False)
+        s = np.zeros(len(pos))
+        s[pos_idx] = 1
+
+        self.bags_labels = torch.tensor(s)
+
     def create_bag(self):
 
         r'''
@@ -153,14 +186,9 @@ class Bags(data_utils.Dataset):
             bags_list.append(self.data.data[indices])
             labels_list.append(labels_in_bag)
 
+        if self.train:
+
+            self.create_bag_label(labels_list)
+
         return bags_list, labels_list
 
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, index):
-
-        bag = self.bags[index]
-        label = [max(self.labels[index]), self.labels[index]]
-
-        return bag, label

@@ -1,9 +1,18 @@
 [extractor_1]
 
+    # extractor for feature extraction
+    Conv2d_1st = [1, 20, 5]
+    MaxPool2d_1st = [2, 2]
+
+    Conv2d_2nd = [20, 50, 5]
+    MaxPool2d_2nd = [2, 2]
 
 [extractor_2]
 
+    # extractor for attention input
+    Layer = [800, 500]    # 50*4*4, L
+
 [attention]
-    L=500
-    D=128
-    K=1
+    L=500  # Attention model input nodes
+    D=128  # Attention model intermediate nodes
+    K=1    # Attention model output nodes
