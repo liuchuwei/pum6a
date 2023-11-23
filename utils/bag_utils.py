@@ -74,12 +74,14 @@ class Bags(data_utils.Dataset):
         # self.__getitem__(0)
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.bags)
 
     def __getitem__(self, index):
 
         bag = self.bags[index]
-        label = [max(self.bags_labels[index]), self.labels[index]]
+        # bag = bag.unsqueeze(0)
+        # label = [max(self.labels[index]), self.labels[index]]
+        label = [self.bags_labels[index], self.labels[index]]
 
         return bag, label
 
