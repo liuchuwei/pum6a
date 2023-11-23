@@ -1,0 +1,9 @@
+[extractor_1]
+
+
+[extractor_2]
+
+[attention]
+    L=500
+    D=128
+    K=1
