@@ -13,12 +13,12 @@ def inference_collate(batch):
     instance_labels = [item[1][1] for item in batch]
     return features, n_instance, bag_labels, instance_labels
 
-train_loader = data_utils.DataLoader(Bags(dataset="MNIST", train=True),
+train_loader = data_utils.DataLoader(Bags(dataset="Cifar10", train=True),
                                      batch_size=10,
                                      shuffle=True,
                                      collate_fn=inference_collate)
 
-test_loader = data_utils.DataLoader(Bags(dataset="MNIST", train=False),
+test_loader = data_utils.DataLoader(Bags(dataset="Cifar10", train=False),
                                      batch_size=10,
                                      shuffle=True,
                                      collate_fn=inference_collate)
@@ -30,5 +30,10 @@ model = milpuAttention(config)
 for batch_idx, (features, n_instance, bag_labels, instance_labels) in enumerate(train_loader):
 
     bag_label = 0
+    idx = [np.sum(n_instance.numpy()[:it]) for it in range(1, len(n_instance.numpy()) + 1)]
+    bag = np.split(features, idx)[:-1]
+
+    model(bag[0])
+
 
 # train & test

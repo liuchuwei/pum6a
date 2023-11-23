@@ -107,7 +107,7 @@ class milpuAttention(nn.Module):
                         Y_hat (torch.Tensor): Binary format of Y_prob
                         A (torch.Tensor): A tensor containing attention weight of instance features
         '''
-        x = x.squeeze(0)
+        x = x.unsqueeze(1)
 
         H = self.feature_extractor_part1(x)
         H = H.view(-1, 50 * 4 * 4)

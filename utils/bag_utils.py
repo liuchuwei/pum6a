@@ -6,10 +6,10 @@ from torchvision import datasets, transforms
 from typing import *
 from sklearn.model_selection import train_test_split
 
-class ADBenchDataset(object):
+class storeDataset(object):
 
     r'''
-    An object class for store dataset obtain from ADBench.
+    An object class for store dataset.
 
     '''
 
@@ -101,10 +101,21 @@ class Bags(data_utils.Dataset):
 
             self.target = 9
 
+            self.data = storeDataset()
+
             if self.train:
-                self.data = datasets.MNIST("data",train=True,download=True,transform=pipeline)
+                loader = data_utils.DataLoader(datasets.MNIST("data",train=True,download=True,transform=pipeline),
+                                               batch_size=60000,
+                                               shuffle=False)
             else:
-                self.data = datasets.MNIST("data",train=False,download=True,transform=pipeline)
+
+                loader = data_utils.DataLoader(datasets.MNIST("data",train=False,download=True,transform=pipeline),
+                                               batch_size=10000,
+                                               shuffle=False)
+
+            for (batch_data, batch_labels) in loader:
+                self.data.data = batch_data
+                self.data.targets = batch_labels
 
             self.size = self.data.data.size()[0]
 
@@ -113,9 +124,17 @@ class Bags(data_utils.Dataset):
             '2.Cifar10'
 
             if self.train:
-                self.data = datasets.CIFAR10(root = 'data', train= True, download= True)
+                loader = data_utils.DataLoader(datasets.CIFAR10(root = 'data', train= True, download= True),
+                                               batch_size=50000,
+                                               shuffle=False)
             else:
-                self.data = datasets.CIFAR10(root = 'data', train= False, download= True)
+                loader = data_utils.DataLoader(datasets.CIFAR10(root = 'data', train= False, download= True),
+                                               batch_size=10000,
+                                               shuffle=False)
+
+            for (batch_data, batch_labels) in loader:
+                self.data.data = batch_data
+                self.data.targets = batch_labels
 
             self.size = self.data.data.shape[0]
             self.target = 9
@@ -126,7 +145,7 @@ class Bags(data_utils.Dataset):
             X, y = data['X'], data['y']
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
 
-            self.data = ADBenchDataset()
+            self.data = storeDataset()
 
             if self.train:
                 self.data.data = X_train
