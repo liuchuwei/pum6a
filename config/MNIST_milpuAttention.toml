@@ -13,6 +13,6 @@
     Layer = [800, 500]    # 50*4*4, L
 
 [attention]
-    L=500  # Attention model input nodes
-    D=128  # Attention model intermediate nodes
+    L=784  # Attention model input nodes
+    D=256  # Attention model intermediate nodes
     K=1    # Attention model output nodes
