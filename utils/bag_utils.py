@@ -71,7 +71,7 @@ class Bags(data_utils.Dataset):
 
         self.bags, self.labels = self.create_bag()
 
-        # self.__getitem__(0)
+        # self.__getitem__(7)
 
     def __len__(self):
         return len(self.bags)
@@ -175,6 +175,9 @@ class Bags(data_utils.Dataset):
         s = np.zeros(len(pos))
         s[pos_idx] = 1
 
+        neg_idx = np.random.choice(np.where(s == 0)[0], size=self.n_pos, replace=False)
+        s[neg_idx] = -1
+
         self.bags_labels = torch.tensor(s)
 
     def create_bag(self):
@@ -207,9 +210,9 @@ class Bags(data_utils.Dataset):
             bags_list.append(self.data.data[indices])
             labels_list.append(labels_in_bag)
 
-        if self.train:
+        # if self.train:
 
-            self.create_bag_label(labels_list)
+        self.create_bag_label(labels_list)
 
         return bags_list, labels_list
 
