@@ -48,12 +48,12 @@ def test(dataloader, model):
 
 
 
-train_loader = data_utils.DataLoader(Bags(dataset="MNIST", train=True),
+train_loader = data_utils.DataLoader(Bags(dataset="annthyroid", train=True),
                                      batch_size=16,
                                      shuffle=True,
                                      collate_fn=inference_collate)
 
-test_loader = data_utils.DataLoader(Bags(dataset="MNIST", train=False),
+test_loader = data_utils.DataLoader(Bags(dataset="annthyroid", train=False),
                                      batch_size=16,
                                      shuffle=True,
                                      collate_fn=inference_collate)
