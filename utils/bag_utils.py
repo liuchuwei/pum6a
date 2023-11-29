@@ -6,6 +6,20 @@ from torchvision import datasets, transforms
 from typing import *
 from sklearn.model_selection import train_test_split
 
+
+def inference_collate(batch):
+
+    """
+    Assitance method of inference collection for dataloader
+    """
+
+    n_instance = [item[0][0].shape[0] for item in batch]
+    features = torch.cat([item[0][0] for item in batch])
+    bag_idx = [item[0][1] for item in batch]
+
+    return features, n_instance, bag_idx
+
+
 class storeDataset(object):
 
     r'''
@@ -36,7 +50,7 @@ class Bags(data_utils.Dataset):
                  mean_bag_length: Optional[int]=10,
                  var_bag_length: Optional[int]=2,
                  n_pos: Optional[int]=50,
-                 seed: Optional[int]=666,
+                 seed: Optional[int]=8888888,
                  train: Optional[bool]=True):
 
         r'''
@@ -78,12 +92,13 @@ class Bags(data_utils.Dataset):
 
     def __getitem__(self, index):
 
-        bag = self.bags[index]
+        bag = [self.bags[index], index]
         # bag = bag.unsqueeze(0)
         # label = [max(self.labels[index]), self.labels[index]]
-        label = [self.bags_labels[index], self.labels[index]]
+        # label = [self.bags_labels[index], self.labels[index]]
+        idx = index
 
-        return bag, label
+        return bag, idx
 
     def obtain_dataset(self):
 
@@ -104,12 +119,12 @@ class Bags(data_utils.Dataset):
             self.data = storeDataset()
 
             if self.train:
-                loader = data_utils.DataLoader(datasets.MNIST("data",train=True,download=True,transform=pipeline),
+                loader = data_utils.DataLoader(datasets.MNIST("dataset",train=True,download=True,transform=pipeline),
                                                batch_size=60000,
                                                shuffle=False)
             else:
 
-                loader = data_utils.DataLoader(datasets.MNIST("data",train=False,download=True,transform=pipeline),
+                loader = data_utils.DataLoader(datasets.MNIST("dataset",train=False,download=True,transform=pipeline),
                                                batch_size=10000,
                                                shuffle=False)
 
@@ -124,11 +139,11 @@ class Bags(data_utils.Dataset):
             '2.Cifar10'
 
             if self.train:
-                loader = data_utils.DataLoader(datasets.CIFAR10(root = 'data', train= True, download= True),
+                loader = data_utils.DataLoader(datasets.CIFAR10(root='dataset', train= True, download= True),
                                                batch_size=50000,
                                                shuffle=False)
             else:
-                loader = data_utils.DataLoader(datasets.CIFAR10(root = 'data', train= False, download= True),
+                loader = data_utils.DataLoader(datasets.CIFAR10(root='dataset', train= False, download= True),
                                                batch_size=10000,
                                                shuffle=False)
 
@@ -175,8 +190,8 @@ class Bags(data_utils.Dataset):
         s = np.zeros(len(pos))
         s[pos_idx] = 1
 
-        neg_idx = np.random.choice(np.where(s == 0)[0], size=self.n_pos, replace=False)
-        s[neg_idx] = -1
+        # neg_idx = np.random.choice(np.where(s == 0)[0], size=self.n_pos, replace=False)
+        # s[neg_idx] = -1
 
         self.bags_labels = torch.tensor(s)
 

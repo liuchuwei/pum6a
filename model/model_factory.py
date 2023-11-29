@@ -101,14 +101,14 @@ class milpuAttention(nn.Module):
             nn.ReLU(True),
             # 8 x 20 x 20 = 3200
             nn.Flatten(),
-            nn.Linear(3200, 28*28),
+            nn.Linear(3200, 10),
             # 10
             nn.Softmax(),
         )
 
         self.decoder = nn.Sequential(
             # 10
-            nn.Linear(28*28, 2000),
+            nn.Linear(10, 2000),
             # 400
             nn.ReLU(True),
             nn.Linear(2000, 4000),
@@ -123,6 +123,20 @@ class milpuAttention(nn.Module):
             nn.Sigmoid(),
         )
 
+        self.feature_extractor_part1 = nn.Sequential(
+            nn.Conv2d(1, 20, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(2, stride=2),
+            nn.Conv2d(20, 50, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(2, stride=2)
+        )
+
+        self.feature_extractor_part2 = nn.Sequential(
+            nn.Linear(50 * 4 * 4, self.L),
+            nn.ReLU(),
+        )
+
         self.attention = nn.Sequential(
             nn.Linear(self.L, self.D),
             nn.Tanh(),
@@ -132,6 +146,10 @@ class milpuAttention(nn.Module):
 
         self.logistic = Net()
 
+        self.classifier = nn.Sequential(
+            nn.Linear(self.L*self.K, 1),
+            nn.Sigmoid()
+        )
 
     def autoencoder_forward(self, x):
 
@@ -151,6 +169,23 @@ class milpuAttention(nn.Module):
 
         return enc, dec
 
+    def _weightnoisyor(self,pij):
+        rv1 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu1), scale=torch.tensor(self.sigma1))
+        rv2 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu2), scale=torch.tensor(self.sigma2))
+        nbags = pij.size()[0]
+        ninstances = pij.size()[1]
+        pij = pij.reshape(nbags,ninstances)
+        ranks = torch.empty((nbags, ninstances), dtype = torch.float)
+        tmp = torch.argsort(pij, dim=1, descending=False)
+        for i in range(nbags):
+            ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+        w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+        w = torch.div(w,torch.sum(w, dim = 1).reshape(nbags,1))
+        pij = pij.to(self.device, non_blocking = True).float()
+        w = w.to(self.device, non_blocking = True).float()
+        noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min = 0, max = 1), dim = 1)
+        return noisyor
+
     def Attforward(self, x):
 
         r'''
@@ -168,16 +203,24 @@ class milpuAttention(nn.Module):
 
         enc, dec = self.autoencoder_forward(x)
 
-        l1 = torch.nn.PairwiseDistance()(torch.flatten(x, start_dim=1), torch.flatten(dec, start_dim=1))
+        l1 = torch.nn.PairwiseDistance(p=2)(torch.flatten(x, start_dim=1), torch.flatten(dec, start_dim=1))*0.1
         pij = self.logistic(l1)
+        #
+        # H = self.feature_extractor_part1(x)
+        # H = H.view(-1, 50 * 4 * 4)
+        # H = self.feature_extractor_part2(H)  # NxL
 
         A = self.attention(enc)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
         A = F.softmax(A, dim=1)  # softmax over N
 
-        bp = 1 - torch.prod(torch.pow(1-pij+1e-10, A).clip(min=0, max=1), dim=1)
+        M = torch.mm(A, enc)
+        bc = self.classifier(M)
 
-        return bp, pij, A
+        bp = 1 - torch.prod(torch.pow(1-pij+1e-10,A).clip(min=0, max=1), dim=1)
+        # bp = (1 - torch.prod((1-pij+1e-10).clip(min=0, max=1))).unsqueeze(0)
+
+        return bc, bp, pij, A
 
     def _log_diverse_density(self, pi, y_bags):
         r'''
@@ -217,9 +260,9 @@ class milpuAttention(nn.Module):
        '''
 
 
-        bag, bag_labels, instance_labels, n_instance = input
+        bag, bag_labels = input
 
-        idx_l1 = torch.where(torch.stack(bag_labels) != 1)[0]
+        idx_l1 = torch.where(bag_labels != 1)[0]
 
         if idx_l1.shape[0] > 0:
             data_inst_l1 = torch.concat([bag[index] for index in idx_l1])
@@ -228,17 +271,25 @@ class milpuAttention(nn.Module):
         else:
             loss1 = torch.tensor(0, dtype=torch.float)  # reconstruct loss
 
-        idx_l2 = torch.where(torch.stack(bag_labels) != 0)[0]
+        data_inst = [self.Attforward(item) for item in bag]
+        idx_l2 = torch.where(bag_labels != 0)[0]
         if idx_l2.shape[0] > 0:
-            data_inst_l2 = [bag[index] for index in idx_l2]
-            l2 = [self.Attforward(item) for item in data_inst_l2]
-            pi = torch.stack([item[0] for item in l2])
+            l2 = [data_inst[item] for item in idx_l2]
+            pc = torch.concat([item[0] for item in l2]).squeeze()
+            pi = torch.stack([item[1] for item in l2])
             y = torch.stack([bag_labels[index] for index in idx_l2])
+            yi = torch.clone(y)
+            yi[torch.where(yi == -1)] = 0
             loss2 = -1*(self._log_diverse_density(pi, y)+1e-10) + 0.01*(self.logistic.A**2+self.logistic.B**2)[0]
+            loss3 = torch.sum(-1. * (yi * torch.log(pc) + (1. - yi) * torch.log(1. - pc)))
+
         else:
             loss2 = 0.01*(self.logistic.A**2+self.logistic.B**2)[0]
+            loss3 = torch.tensor(0, dtype=torch.float)
 
-        return loss1 + loss2
+        # bag_pi = torch.stack([item[0] for item in data_inst])
+
+        return loss1, loss2, loss3, data_inst
 
 
 

@@ -1,0 +1,234 @@
+import random
+import numpy as np
+import torch
+from typing import *
+import torch.utils.data as data_utils
+from torch import optim
+
+from utils.bag_utils import inference_collate
+
+def set_seed(seed: Optional[int] = 1):
+
+    """
+    Method to set global training seed for repeatability of experiment
+
+    :param seed: seed number
+    :return: none
+    """
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+class Trainer(object):
+
+    """
+    An object class for model training
+    """
+    def __init__(self,
+                config: Optional[Dict]=None,
+                model=None, train_bag=None,
+                test_bag=None):
+
+        r"""
+        Initialization function for the class
+
+            Args:
+                    config (Dict): A dictionary containing training configurations.
+                    model: Model to train
+                    train_bag: Bag dataset for model training
+                    test_bag: Bag dataset for model testing
+
+            Returns:
+                    None
+        """
+
+        self.config = config
+        self.model = model
+        self.train_bag = train_bag
+        self.test_bag = test_bag
+
+        self.device = (
+            "cuda"
+            if torch.cuda.is_available() and config['device'] == 'cuda'
+            else "mps"
+            if torch.backends.mps.is_available()
+            else "cpu"
+        )
+
+        self.generateDataLoader()
+        self.initNegLabel()
+        self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
+
+        self.model.to(self.device)
+
+    def generateDataLoader(self):
+        """
+        Instance method for generating dataloader
+
+        """
+        self.train_loader = data_utils.DataLoader(self.train_bag,
+                                             batch_size=self.config['batch_size'],
+                                             shuffle=True,
+                                             collate_fn=inference_collate)
+
+        self.test_loader = data_utils.DataLoader(self.test_bag,
+                                            batch_size=self.config['batch_size'],
+                                            shuffle=True,
+                                            collate_fn=inference_collate)
+
+    def build_optimizer(self, params, weight_decay=0.0):
+        filter_fn = filter(lambda p: p.requires_grad, params)
+        if self.config['opt'] == 'adam':
+            optimizer = optim.Adam(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
+        elif self.config['opt'] == 'sgd':
+            optimizer = optim.SGD(filter_fn, lr=self.config['lr'], momentum=0.95, weight_decay=weight_decay)
+        elif self.config['opt'] == 'rmsprop':
+            optimizer = optim.RMSprop(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
+        elif self.config['opt'] == 'adagrad':
+            optimizer = optim.Adagrad(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
+        if self.config['opt_scheduler'] == 'none':
+            return None, optimizer
+        elif self.config['opt_scheduler'] == 'step':
+            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['opt_decay_step'],
+                                                  gamma=self.config['opt_decay_rate'])
+        elif self.config['opt_scheduler'] == 'cos':
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['opt_restart'])
+
+        return scheduler, optimizer
+    
+    def initNegLabel(self):
+
+        """
+        Instance method for initiating negative bag label
+        """
+
+        y_tmp = torch.clone(self.train_bag.bags_labels)
+        neg_idx = torch.where(y_tmp == 0)[0]
+        n_neg = self.train_bag.n_pos
+        y_tmp[neg_idx[torch.randperm(neg_idx.size(0))[:n_neg]]] = -1
+
+        self.y_tmp = y_tmp.to(self.device)
+    def refreshNegLabel(self, bag_scores):
+
+        """
+        Instance method for refreshing negative bag label
+
+            Args:
+                bag_scores: bag probability obtaining during training
+
+            Returns:
+                none
+        """
+
+        nonpos_idx = torch.where(self.train_bag.bags_labels == 0)[0].to(self.device)
+        sorted_idx = torch.argsort(bag_scores[nonpos_idx], dim=0)[:self.train_bag.n_pos]
+        self.y_tmp = torch.clone(self.train_bag.bags_labels).to(self.device)
+        self.y_tmp[nonpos_idx[sorted_idx]] = -1
+
+    def train_epoch(self):
+
+        size = len(self.train_loader.dataset)
+
+        self.model.train()
+
+        bag_scores = torch.zeros([self.train_bag.num_bag, 1]).to(self.device).float()
+
+        for batch, (features, n_instance, bag_idx) in enumerate(self.train_loader):
+
+            idx = [np.sum(n_instance[:it]) for it in range(1, len(n_instance) + 1)]
+            bag = np.split(features, idx)[:-1]
+            bag = [item.to(self.device) for item in bag]
+
+            bag_labels = self.y_tmp[bag_idx]
+            bag_labels = bag_labels.to(self.device)
+
+            loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels))
+            loss = loss1 + loss2 + loss3
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+
+            bag_scores[bag_idx] = torch.stack([item[1] for item in data_inst])
+
+            if batch % 5 == 0:
+                loss, current = loss.item(), (batch + 1) * self.config['batch_size']
+                print(f"rec_loss: {loss1:>7f} likehood_loss_p: {loss2:>7f}  likehood_loss_c: {loss3:>7f} [{current:>5d}/{size:>5d}]")
+
+        self.refreshNegLabel(bag_scores)
+
+    def _process_decision_scores(self, threshold_: Optional[float]=0.5, data_inst=None, bag_idx=None):
+
+        self.threshold_ = threshold_
+
+
+        bag_pro_c = torch.stack([item[0] for item in data_inst])
+        bag_pro_c = (bag_pro_c > self.threshold_).float().squeeze()
+        bag_pro_p = torch.stack([item[1] for item in data_inst])
+        bag_pro_p = (bag_pro_p > self.threshold_).float().squeeze()
+        inst_pro = torch.concat([item[2] for item in data_inst])
+        inst_pro = (inst_pro > self.threshold_).float()
+
+        inst_y = [self.test_bag.labels[item] for item in bag_idx]
+        bag_y = torch.stack([torch.max(item).float() for item in inst_y]).to(self.device)
+        inst_y = torch.concat(inst_y).float().to(self.device)
+
+        bag_correct_c = (bag_pro_c == bag_y).sum().type(torch.float)
+        bag_correct_p = (bag_pro_p == bag_y).sum().type(torch.float)
+        inst_correct = (inst_pro == inst_y).sum().type(torch.float)
+        inst_len = len(inst_y)
+
+        return bag_correct_c, bag_correct_p, inst_correct, inst_len
+
+    def test_epoch(self):
+
+        self.model.eval()
+        size = len(self.test_loader.dataset)
+        num_batches = len(self.test_loader)
+        test_loss, bag_correct_c, bag_correct_p, inst_correct = 0, 0, 0, 0
+        inst_len = 0
+        with torch.no_grad():
+            for features, n_instance, bag_idx in self.test_loader:
+
+                idx = [np.sum(n_instance[:it]) for it in range(1, len(n_instance) + 1)]
+                bag = np.split(features, idx)[:-1]
+                bag = [item.to(self.device) for item in bag]
+
+                bag_labels = self.y_tmp[bag_idx]
+                bag_labels = bag_labels.to(self.device)
+
+                loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels))
+
+                test_loss += loss1
+                test_loss += loss2
+                test_loss += loss3
+
+                bag_cor_c, bag_cor_p, inst_cor, inst_num = self._process_decision_scores(
+                    data_inst=data_inst, bag_idx=bag_idx)
+
+                bag_correct_c += bag_cor_c
+                bag_correct_p += bag_cor_p
+                inst_correct += inst_cor
+                inst_len += inst_num
+
+        test_loss /= num_batches
+        bag_correct_c /= size
+        bag_correct_p /= size
+        inst_correct /= inst_len
+
+        print(f"Test Error: \n Bag_acc_c: {(100 * bag_correct_c):>0.1f}%, "
+              f"Bag_acc_p: {(100 * bag_correct_p):>0.1f}%, "
+              f"Instance_acc: {(100 * inst_correct):>0.1f}%,"
+              f"Avg loss: {test_loss:>8f} \n")
+
+    def run(self):
+
+        for t in range(self.config['epochs']):
+
+            print(f"Epoch {t + 1}\n-------------------------------")
+            self.train_epoch()
+            self.test_epoch()
+
+        print("Done!")

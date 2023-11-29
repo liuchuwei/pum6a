@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
-from modules import preprocess, train, predict, evaluate
+from modules import preprocess, train, predict, evaluate, experiment
 
-modules = ['preprocess', 'train', 'predict', 'evaluate']
+modules = ['preprocess', 'train', 'predict', 'evaluate', 'experiment']
 
 __version__ = "1.0.0"
 
