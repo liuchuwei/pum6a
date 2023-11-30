@@ -229,6 +229,34 @@ class pum6a(nn.Module):
 
         return enc, dec
 
+    def _weightnoisyor(self,pij):
+
+        """
+        instance method to calculate instance weight
+        """
+        self.mu1 = 0
+        self.mu2 = 1
+        self.sigma1 = 0.1
+        self.sigma2 = 0.1
+
+        rv1 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu1), scale=torch.tensor(self.sigma1))
+        rv2 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu2), scale=torch.tensor(self.sigma2))
+        # nbags = pij.size()[0]
+        nbags = 1
+        # ninstances = pij.size()[1]
+        ninstances = pij.size()[0]
+        pij = pij.reshape(nbags,ninstances)
+        ranks = torch.empty((nbags, ninstances), dtype = torch.float)
+        tmp = torch.argsort(pij, dim=1, descending=False)
+        for i in range(nbags):
+            ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+        w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+        w = torch.div(w,torch.sum(w, dim = 1).reshape(nbags,1))
+        pij = pij.to(self.device, non_blocking = True).float()
+        w = w.to(self.device, non_blocking = True).float()
+        noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min = 0, max = 1), dim = 1)
+        return noisyor
+
     def Attforward(self, x):
 
         r'''
