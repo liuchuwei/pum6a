@@ -1,0 +1,26 @@
+dataset = "construct"
+seed = 88888888
+epochs = 300
+batch_size=16
+opt = 'adam'
+lr = 0.005
+opt_scheduler = 'none'
+opt_decay_step = 'none'
+opt_decay_rate = 'none'
+opt_restart = 'none'
+device = "cuda"
+
+[model]
+    device = "cuda"
+
+    [model.attention]
+    L=1  # Attention model input nodes
+    D=10  # Attention model intermediate nodes
+    K=1    # Attention model output nodes
+
+    [model.autoencoder]
+    n_features = 2
+    dropout_rate = 0.1
+    hidden_neurons = [4, 2]
+    batch_norm = 'True'
+    hidden_activation = 'relu'

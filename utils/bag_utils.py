@@ -6,6 +6,8 @@ from torchvision import datasets, transforms
 from typing import *
 from sklearn.model_selection import train_test_split
 
+from utils.gen_data import genData
+
 
 def inference_collate(batch):
 
@@ -72,8 +74,8 @@ class Bags(data_utils.Dataset):
                 ValueError: Raises an exception when some of the listed arguments do not follow the allowed conventions
         '''
 
-        if dataset not in ['MNIST', 'Cifar10', 'annthyroid']:
-            raise ValueError("Invalid dataset. possible dataset: MNIST、Cifar10、annthyroid")
+        if dataset not in ['MNIST', 'construct', 'annthyroid']:
+            raise ValueError("Invalid dataset. possible dataset: MNIST、construct、annthyroid")
 
         self.dataset = dataset
         self.mean_bag_length = mean_bag_length
@@ -134,31 +136,35 @@ class Bags(data_utils.Dataset):
 
             self.size = self.data.data.size()[0]
 
-        elif self.dataset == "Cifar10":
+        elif self.dataset == "construct":
 
-            '2.Cifar10'
+            '2.construct'
 
             if self.train:
-                loader = data_utils.DataLoader(datasets.CIFAR10(root='dataset', train= True, download= True),
-                                               batch_size=50000,
-                                               shuffle=False)
+                bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
+                X_inst = X_inst[:2500,]
+                y_inst = y_inst[:2500,]
             else:
-                loader = data_utils.DataLoader(datasets.CIFAR10(root='dataset', train= False, download= True),
-                                               batch_size=10000,
-                                               shuffle=False)
+                bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
+                X_inst = X_inst[2500:,]
+                y_inst = y_inst[2500:,]
 
-            for (batch_data, batch_labels) in loader:
-                self.data.data = batch_data
-                self.data.targets = batch_labels
+            mean, std = np.mean(X_inst, axis=0), np.std(X_inst, axis=0)
+            X_inst = (X_inst - mean) / std
+
+            self.data = storeDataset()
+
+            self.data.data = torch.FloatTensor(X_inst)
+            self.data.targets = torch.FloatTensor(y_inst)
 
             self.size = self.data.data.shape[0]
-            self.target = 9
+            self.target = 1
 
         elif self.dataset == "annthyroid":
 
             data = np.load("dataset/ADBench/2_annthyroid.npz", allow_pickle=True)
             X, y = data['X'], data['y']
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state = 42)
 
             self.data = storeDataset()
 
@@ -192,8 +198,10 @@ class Bags(data_utils.Dataset):
 
         # neg_idx = np.random.choice(np.where(s == 0)[0], size=self.n_pos, replace=False)
         # s[neg_idx] = -1
-
-        self.bags_labels = torch.tensor(s)
+        if self.train:
+            self.bags_labels = torch.tensor(s)
+        else:
+            self.bags_labels = torch.stack(pos).float()
 
     def create_bag(self):
 
@@ -209,6 +217,7 @@ class Bags(data_utils.Dataset):
         for i in range(self.num_bag):
 
             bag_length = np.int32(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
+            # bag_length = np.int32(10)
 
             if bag_length < 1:
                 bag_length = 1

@@ -60,8 +60,9 @@ class Trainer(object):
 
         self.generateDataLoader()
         self.initNegLabel()
-        self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
-
+        # self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.0025,
+                                      weight_decay=1e-05, amsgrad = True)
         self.model.to(self.device)
 
     def generateDataLoader(self):
@@ -145,17 +146,23 @@ class Trainer(object):
             bag_labels = self.y_tmp[bag_idx]
             bag_labels = bag_labels.to(self.device)
 
-            loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels))
-            loss = loss1 + loss2 + loss3
+            loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels, n_instance))
+            loss = loss1 + loss2
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
 
             bag_scores[bag_idx] = torch.stack([item[1] for item in data_inst])
+            # bag_scores[bag_idx] = data_inst[1].unsqueeze(1)
 
             if batch % 5 == 0:
                 loss, current = loss.item(), (batch + 1) * self.config['batch_size']
-                print(f"rec_loss: {loss1:>7f} likehood_loss_p: {loss2:>7f}  likehood_loss_c: {loss3:>7f} [{current:>5d}/{size:>5d}]")
+                # print(f"rec_loss: {loss1:>7f} likehood_loss_p: {loss2:>7f}  "
+                #       f"likehood_loss_c: {loss3:>7f} [{current:>5d}/{size:>5d}]")
+                #
+                print(f"rec_loss: {loss1:>7f} likehood_loss_p: {loss2:>7f}  "
+                      f"[{current:>5d}/{size:>5d}]")
+
 
         self.refreshNegLabel(bag_scores)
 
@@ -166,16 +173,19 @@ class Trainer(object):
 
         bag_pro_c = torch.stack([item[0] for item in data_inst])
         bag_pro_c = (bag_pro_c > self.threshold_).float().squeeze()
+        # bag_pro_p = data_inst[1]
         bag_pro_p = torch.stack([item[1] for item in data_inst])
         bag_pro_p = (bag_pro_p > self.threshold_).float().squeeze()
+        # inst_pro = torch.concat([torch.flatten(item) for item in data_inst[2]])
         inst_pro = torch.concat([item[2] for item in data_inst])
-        inst_pro = (inst_pro > self.threshold_).float()
+        inst_pro = (inst_pro> self.threshold_).float()
 
         inst_y = [self.test_bag.labels[item] for item in bag_idx]
         bag_y = torch.stack([torch.max(item).float() for item in inst_y]).to(self.device)
         inst_y = torch.concat(inst_y).float().to(self.device)
 
         bag_correct_c = (bag_pro_c == bag_y).sum().type(torch.float)
+        # bag_correct_c = 0
         bag_correct_p = (bag_pro_p == bag_y).sum().type(torch.float)
         inst_correct = (inst_pro == inst_y).sum().type(torch.float)
         inst_len = len(inst_y)
@@ -189,6 +199,8 @@ class Trainer(object):
         num_batches = len(self.test_loader)
         test_loss, bag_correct_c, bag_correct_p, inst_correct = 0, 0, 0, 0
         inst_len = 0
+        bag_pro = []
+        bag_y = []
         with torch.no_grad():
             for features, n_instance, bag_idx in self.test_loader:
 
@@ -196,10 +208,10 @@ class Trainer(object):
                 bag = np.split(features, idx)[:-1]
                 bag = [item.to(self.device) for item in bag]
 
-                bag_labels = self.y_tmp[bag_idx]
+                bag_labels = self.test_bag.bags_labels[bag_idx]
                 bag_labels = bag_labels.to(self.device)
 
-                loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels))
+                loss1, loss2, loss3, data_inst = self.model.bag_forward((bag, bag_labels, n_instance))
 
                 test_loss += loss1
                 test_loss += loss2
@@ -208,20 +220,67 @@ class Trainer(object):
                 bag_cor_c, bag_cor_p, inst_cor, inst_num = self._process_decision_scores(
                     data_inst=data_inst, bag_idx=bag_idx)
 
+                bag_pro.append(torch.concat([item[1] for item in data_inst]))
+                bag_y.append(self.test_bag.bags_labels[bag_idx])
+
                 bag_correct_c += bag_cor_c
                 bag_correct_p += bag_cor_p
                 inst_correct += inst_cor
                 inst_len += inst_num
+
 
         test_loss /= num_batches
         bag_correct_c /= size
         bag_correct_p /= size
         inst_correct /= inst_len
 
+        from sklearn.metrics import roc_auc_score
+
+        bag_auc = roc_auc_score(torch.concat(bag_y).cpu(), torch.concat(bag_pro).cpu())
+        # bag_pi = self.decision_function()
+        # bag_pi = bag_pi.reshape(-1)
+        # bag_auc = roc_auc_score(torch.concat(bag_y).cpu(), bag_pi)
+
         print(f"Test Error: \n Bag_acc_c: {(100 * bag_correct_c):>0.1f}%, "
               f"Bag_acc_p: {(100 * bag_correct_p):>0.1f}%, "
+              f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
               f"Instance_acc: {(100 * inst_correct):>0.1f}%,"
               f"Avg loss: {test_loss:>8f} \n")
+
+    def decision_function(self):
+
+        # enable the evaluation mode
+        self.model.eval()
+        X_bags = torch.stack(self.test_bag.bags)
+        # construct the vector for holding the reconstruction error
+        b_scores = torch.zeros([X_bags.shape[0], 1]).to(self.device, non_blocking=True).float()
+        i_scores = torch.zeros([X_bags.shape[0] * X_bags.shape[1], 1]).to(self.device, non_blocking=True).float()
+
+        with torch.no_grad():
+            self.n_samples = 10
+            self.n_features = 2
+
+            for features, n_instance, bag_idx in self.test_loader:
+                idx = [np.sum(n_instance[:it]) for it in range(1, len(n_instance) + 1)]
+                data = np.split(features, idx)[:-1]
+                data = torch.stack(data).to(self.device)
+                # data = [item.to(self.device) for item in data]
+                local_batch_size, _, _ = data.size()
+                data_idx = torch.tensor(bag_idx).to(self.device, non_blocking=True)
+                # mi = data_idx[0]
+                # ma = data_idx[local_batch_size - 1] + 1
+                data_inst = torch.reshape(data, (local_batch_size * self.n_samples, self.n_features))
+                data_inst = data_inst.to(self.device, non_blocking=True).float()
+                l1 = torch.nn.PairwiseDistance(p=2, eps=0)(data_inst, self.model.autoencoder_forward(data_inst)[1])
+                l1 = torch.reshape(l1, (local_batch_size, self.n_samples, 1))
+                instance_scr = self.model._logistic(l1)
+                # i_scores[mi * self.n_samples:ma * self.n_samples] = instance_scr.reshape(
+                #     local_batch_size * self.n_samples, 1)
+                pi = self.model._weightnoisyor(instance_scr)
+                b_scores[data_idx] = pi.reshape(local_batch_size, 1)
+
+        # return b_scores.cpu().numpy(), i_scores.cpu().numpy()
+        return b_scores.cpu().numpy()
 
     def run(self):
 

@@ -5,11 +5,9 @@ from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
 
-from model.model_factory import milpuAttention
+from model.model_factory import milpuAtt_construct
 from utils.train_utils import set_seed, Trainer
 from utils.bag_utils import Bags
-
-import numpy as np
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -36,12 +34,32 @@ def main(args):
     set_seed(config['seed'])
 
     "3.load dataset"
-    train_bag = Bags(dataset="MNIST", train=True)
+    if config['dataset'] == "MNIST":
 
-    test_bag = Bags(dataset="MNIST", train=False)
+        train_bag = Bags(dataset="MNIST", train=True)
+        test_bag = Bags(dataset="MNIST", train=False)
+
+    elif config['dataset'] == "construct":
+
+        train_bag = Bags(dataset="construct", train=True)
+        test_bag = Bags(dataset="construct", train=False)
+
+    else:
+
+        raise ValueError('Dataset not support')
+
     "4.load model"
     model_config = config['model']
-    model = milpuAttention(model_config)
+
+    if config['dataset'] == "MNIST":
+
+        # model = milpuAtt_MNIST(model_config)
+        pass
+
+    elif config['dataset'] == "construct":
+
+        model = milpuAtt_construct(model_config)
+
 
     "5.train model"
     trainer = Trainer(config=config,

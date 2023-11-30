@@ -1,3 +1,4 @@
+dataset = "MNIST"
 device = "cuda"
 seed = 88888888
 dataset = "MNIST"
