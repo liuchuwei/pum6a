@@ -4,9 +4,9 @@ import argparse
 from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
-from utils.train_utils import set_seed, Trainer
+from utils.train_utils import set_seed, Trainer, MNIST_Trainer
 from utils.bag_utils import Bags
-from model.model_factory import pum6a
+from model.model_factory import pum6a, MNIST_att
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -48,10 +48,15 @@ def main(args):
         raise ValueError('Dataset not support')
 
     "4.load model"
-    model = pum6a(config['model'])
+    # model = pum6a(config['model'])
+    model = MNIST_att(config['model'])
 
     "5.train model"
-    trainer = Trainer(config=config,
+    # trainer = Trainer(config=config,
+    #                   model=model,
+    #                   train_bag=train_bag,
+    #                   test_bag=test_bag)
+    trainer = MNIST_Trainer(config=config,
                       model=model,
                       train_bag=train_bag,
                       test_bag=test_bag)
