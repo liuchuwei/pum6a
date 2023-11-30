@@ -75,7 +75,7 @@ class Trainer(object):
             tot_inst = len(torch.concat(self.train_bag.labels))
             inst_labeledbags = np.sum([len(self.train_bag.labels[item]) for item in (np.where(self.train_bag.bags_labels == 1)[0])])
             inst_unlabeledbags = np.sum([len(self.train_bag.labels[item]) for item in (np.where(self.train_bag.bags_labels != 1)[0])])
-            self.model.cont_factor = max((0.1 * tot_inst - 0.25 * inst_labeledbags) / inst_unlabeledbags, 0)
+            self.model.cont_factor = max((0.3 * tot_inst - 0.25 * inst_labeledbags) / inst_unlabeledbags, 0)
 
     def generateDataLoader(self):
         """

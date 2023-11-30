@@ -1,14 +1,14 @@
 dataset = "MNIST"
 device = "cuda"
 seed = 88888888
-epochs = 300
+epochs = 1000
 batch_size=16
 confactor='False'
 
 [optimizer]
 
     opt = 'AdamW'
-    lr = 0.001
+    lr = 0.005
     weight_decay=1e-05
     amsgrad='True'
     opt_scheduler='none'
@@ -26,7 +26,6 @@ confactor='False'
     type = 'linear'
     batch_norm = 'True'
     n_features = 784
-    hidden_neurons = [256, 128]
-    latent = 64
+    hidden_neurons = [64, 32]
     hidden_activation = 'relu'
     dropout_rate = 0.1
