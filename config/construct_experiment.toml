@@ -10,6 +10,7 @@ device = "cuda"
     lr = 0.0025
     weight_decay=1e-05
     amsgrad='True'
+    opt_scheduler='none'
 
 [model]
 

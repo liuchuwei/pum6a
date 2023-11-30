@@ -1,6 +1,7 @@
 import torch.nn as nn
 from typing import *
 import torch
+import torch.nn.functional as F
 
 class pum6a(nn.Module):
 
@@ -25,6 +26,13 @@ class pum6a(nn.Module):
         self.model_config = model_config
         self.build_model()
 
+        self.device = (
+            "cuda"
+            if torch.cuda.is_available() and model_config['device'] == 'cuda'
+            else "mps"
+            if torch.backends.mps.is_available()
+            else "cpu"
+        )
     def get_activation_by_name(self, name):
 
         r'''
@@ -125,7 +133,7 @@ class pum6a(nn.Module):
         for idx, layer in enumerate(self.layers_neurons_decoder_[:-1]):
 
             self.decoder.add_module("convT" + str(idx),
-                nn.ConvTranspose2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1], kernel_size=self.kernal_size))
+                nn.ConvTranspose2d(self.layers_neurons_decoder_[idx], self.layers_neurons_decoder_[idx + 1], kernel_size=self.kernal_size))
             self.decoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
 
         self.encoder.add_module("out_acitvation",self.decoder_activation)
@@ -191,5 +199,159 @@ class pum6a(nn.Module):
         '3. build attention module'
         self.build_attention()
 
+    def _logistic(self, loss):
+
+        r"""
+        instance method to get instance probability according to reconstruction loss
+
+            Args:
+                loss (torch.Tensor): reconstruction loss
+            Return:
+                (torch.Tensor): instance probability
+        """
+        return torch.sigmoid(self.A * loss + self.B)
+
+    def autoencoder_forward(self, x):
+
+        r"""
+            Instance method to get modification probability on the site level from instance features.
+
+                Args:
+                    x (torch.Tensor): A tensor representation of the instance features
+
+                Returns:
+                    enc (torch.Tensor): A tensor representation of the autoencoder latent features
+                    dec (torch.Tensor): A tensor representation of the autoencoder reconstruct features
+        """
+
+        enc = self.encoder(x)
+        dec = self.decoder(enc)
+
+        return enc, dec
+
+    def Attforward(self, x):
+
+        r'''
+        Instance method to get modification probability on the site level from instance features.
+
+                Args:
+                        x (torch.Tensor): A tensor representation of the instance features
+                Returns:
+                        bp (torch.Tensor): A tensor representation the bag probability
+                        pij (torch.Tensor): A tensor representation the instance probability
+                        A (torch.Tensor): A tensor containing attention weight of instance features
+
+        '''
+        x = x.view(x.size(0), -1)
+
+        enc, dec = self.autoencoder_forward(x)
+
+        if len(x.size()) >= 2:
+            l1 = torch.nn.PairwiseDistance(p=2)(x.flatten(start_dim=1), dec.flatten(start_dim=1))
+        else:
+            l1 = torch.nn.PairwiseDistance(p=2)(x, dec)
+
+        # l1 = torch.stack([(1-ssim(x[idx].unsqueeze(0), dec[idx].unsqueeze(0))) for idx in range(len(x))])
+        pij = self._logistic(l1)
+        #
+        # H = self.feature_extractor_part1(x)
+        # H = H.view(-1, 50 * 4 * 4)
+        # H = self.feature_extractor_part2(H)  # NxL
+
+        A = self.attention(pij.unsqueeze(1))  # NxK
+        A = torch.transpose(A, 1, 0)  # KxN
+        A = F.softmax(A, dim=1)  # softmax over N
+
+        # M = torch.mm(A, enc)
+        bc = torch.mm(A, pij.unsqueeze(1))
+        # bc = self.classifier(bc)
+
+        # pij = torch.mul(pij, A.squeeze())
+        # w = self.a_to_w(A)
+        bp = 1 - torch.prod(torch.pow(1 - pij + 1e-10, A).clip(min=0, max=1), dim=1)
+        # bp = (1 - torch.prod((1-pij+1e-10).clip(min=0, max=1))).unsqueeze(0)
+        # bp = self._weightnoisyor(pij)
+
+        return bc, bp, pij, A
+
+    def _log_diverse_density(self, pi, y_bags):
+        r'''
+        Instance method to Compute the likelihood given bag labels y_bags and bag probabilities pi.
+                Args:
+                        pi (torch.Tensor): A tensor representation of the bag probabilities
+                        y_bags (torch.Tensor): A tensor representation of the bag labels
+                Returns:
+                        likelihood (torch.Tensor): A tensor representation of the likelihood
+
+        '''
+
+        z = torch.where(y_bags == -1)[0]
+        if z.nelement() > 0:
+            zero_sum = torch.sum(torch.log(1 - pi[z] + 1e-10))
+        else:
+            zero_sum = torch.tensor(0).float()
+
+        o = torch.where(y_bags == 1)[0]
+        if o.nelement() > 0:
+            one_sum = torch.sum(torch.log(pi[o] + 1e-10))
+        else:
+            one_sum = torch.tensor(0).float()
+        return zero_sum + one_sum
+
+    def bag_forward(self, input):
+
+        r'''
+        Instance method to get modification probability on the bag level from instance features.
+
+               Args:
+                       input (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
+                       Tensor representation of bag, bag_labels, and number of instance
+               Returns:
+                       loss (torch.Tensor): A tensor representation of model loss
+
+       '''
 
 
+        bag, bag_labels, n_instance = input
+
+        idx_l1 = torch.where(bag_labels != 1)[0]
+
+        if idx_l1.shape[0] > 0:
+            data_inst_l1 = torch.concat([bag[index] for index in idx_l1])
+            data_inst_l1 = data_inst_l1.view(data_inst_l1.size(0), -1)
+            enc, dec = self.autoencoder_forward(data_inst_l1)
+            if len(data_inst_l1.size())>=2:
+                l1 = torch.nn.PairwiseDistance(p=2)(data_inst_l1.flatten(start_dim=1), dec.flatten(start_dim=1))
+            else:
+                l1 = torch.nn.PairwiseDistance(p=2)(data_inst_l1, dec)
+            data_inst_l1 = data_inst_l1[torch.where(l1 < torch.quantile(l1, 1 - self.cont_factor, dim=0))]
+            enc, dec = self.autoencoder_forward(data_inst_l1)
+            loss1 = torch.nn.MSELoss()(data_inst_l1, dec)
+        else:
+            loss1 = torch.tensor(0, dtype=torch.float) .to(self.device) # reconstruct loss
+
+        data_inst = [self.Attforward(item) for item in bag]
+        # data_inst = self.Attforward(torch.concat(bag), n_instance=n_instance)
+        idx_l2 = torch.where(bag_labels != 0)[0]
+        if idx_l2.shape[0] > 0:
+            l2 = [data_inst[item] for item in idx_l2]
+            pc = torch.concat([item[0] for item in l2])
+            # pc = 0
+            pi = torch.stack([item[1] for item in l2])
+            # pi = data_inst[1][idx_l2]
+            y = torch.stack([bag_labels[index] for index in idx_l2])
+            # yi = torch.clone(y)
+            # yi[torch.where(yi == -1)] = 0
+            loss2 = -1*(self._log_diverse_density(pi, y)+1e-10) + 0.01*(self.A**2+self.B**2)[0]
+            # loss3 = torch.sum(-1. * (yi * torch.log(pc) + (1. - yi) * torch.log(1. - pc)))
+            loss3 = -1*(self._log_diverse_density(pc, y)+1e-10) + 0.01*(self.A**2+self.B**2)[0]
+            # loss3 *= 0.1
+            # loss3 = torch.tensor(0, dtype=torch.float).to(self.device)
+
+        else:
+            loss2 = 0.01*(self.A**2+self.B**2)[0]
+            loss3 = torch.tensor(0, dtype=torch.float).to(self.device)
+
+        # bag_pi = torch.stack([item[0] for item in data_inst])
+
+        return loss1, loss2, loss3, data_inst

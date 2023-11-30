@@ -62,6 +62,20 @@ class Trainer(object):
         self.initNegLabel()
         self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
         self.model.to(self.device)
+        self.obtain_cont_factor()
+
+    def obtain_cont_factor(self):
+        r"""
+        instance method to obtain_cont_factor
+        """
+
+        if not isinstance(self.config['confactor'], str):
+            self.model.cont_factor = self.config['confactor']
+        else:
+            tot_inst = len(torch.concat(self.train_bag.labels))
+            inst_labeledbags = np.sum([len(self.train_bag.labels[item]) for item in (np.where(self.train_bag.bags_labels == 1)[0])])
+            inst_unlabeledbags = np.sum([len(self.train_bag.labels[item]) for item in (np.where(self.train_bag.bags_labels != 1)[0])])
+            self.model.cont_factor = max((0.1 * tot_inst - 0.25 * inst_labeledbags) / inst_unlabeledbags, 0)
 
     def generateDataLoader(self):
         """
@@ -95,7 +109,7 @@ class Trainer(object):
         if self.config['optimizer']['opt'] == 'adam':
             optimizer = optim.Adam(filter_fn, lr=self.config['optimizer']['lr'], weight_decay=self.config['optimizer']['weight_decay'])
         elif self.config['optimizer']['opt'] == 'AdamW':
-            torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
+            optimizer = torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
                               weight_decay=self.config['optimizer']['weight_decay'], amsgrad=self.config['optimizer']['amsgrad'])
         elif self.config['optimizer']['opt'] == 'sgd':
             optimizer = optim.SGD(filter_fn, lr=self.config['optimizer']['lr'], momentum=self.config['momentum']['weight_decay'], weight_decay=self.config['optimizer']['weight_decay'])
@@ -143,6 +157,9 @@ class Trainer(object):
         self.y_tmp[nonpos_idx[sorted_idx]] = -1
 
     def train_epoch(self):
+        r"""
+        Instance method for taining one epoch
+        """
 
         size = len(self.train_loader.dataset)
 
@@ -206,6 +223,10 @@ class Trainer(object):
         return bag_correct_c, bag_correct_p, inst_correct, inst_len
 
     def test_epoch(self):
+
+        r"""
+        Instance method for testing one epoch
+        """
 
         self.model.eval()
         size = len(self.test_loader.dataset)

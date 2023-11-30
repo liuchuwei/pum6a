@@ -3,28 +3,30 @@ device = "cuda"
 seed = 88888888
 epochs = 300
 batch_size=16
+confactor='False'
 
 [optimizer]
-    opt = 'adam'
-    lr = 0.025
-    opt_scheduler = 'none'
-    opt_decay_step = 'none'
-    opt_decay_rate = 'none'
-    opt_restart = 'none'
 
+    opt = 'AdamW'
+    lr = 0.001
+    weight_decay=1e-05
+    amsgrad='True'
+    opt_scheduler='none'
 
 [model]
+    device = "cuda"
+
     [model.attention]
-    L=10  # Attention model input nodes
+    L=1  # Attention model input nodes
     D=10  # Attention model intermediate nodes
     K=1    # Attention model output nodes
 
     [model.autoencoder]
-    type = 'conv'
-    kernal_size = 5
-    n_features = [28, 28]
-    hidden_neurons = [4, 8]
-    latent = 10
+#    type = 'conv'
+    type = 'linear'
+    batch_norm = 'True'
+    n_features = 784
+    hidden_neurons = [256, 128]
+    latent = 64
     hidden_activation = 'relu'
-    encoder_activation = 'softmax'
-    decoder_activation = 'sigmoid'
+    dropout_rate = 0.1
