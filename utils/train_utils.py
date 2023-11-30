@@ -60,9 +60,7 @@ class Trainer(object):
 
         self.generateDataLoader()
         self.initNegLabel()
-        # self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.0025,
-                                      weight_decay=1e-05, amsgrad = True)
+        self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
         self.model.to(self.device)
 
     def generateDataLoader(self):
@@ -81,22 +79,37 @@ class Trainer(object):
                                             collate_fn=inference_collate)
 
     def build_optimizer(self, params, weight_decay=0.0):
+
+        r"""
+        instance method for building optimizer
+
+            Args:
+                params: model params
+                weight_decay: learning rate weight decay
+
+            Return:
+                none
+
+        """
         filter_fn = filter(lambda p: p.requires_grad, params)
-        if self.config['opt'] == 'adam':
-            optimizer = optim.Adam(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
-        elif self.config['opt'] == 'sgd':
-            optimizer = optim.SGD(filter_fn, lr=self.config['lr'], momentum=0.95, weight_decay=weight_decay)
-        elif self.config['opt'] == 'rmsprop':
-            optimizer = optim.RMSprop(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
-        elif self.config['opt'] == 'adagrad':
-            optimizer = optim.Adagrad(filter_fn, lr=self.config['lr'], weight_decay=weight_decay)
-        if self.config['opt_scheduler'] == 'none':
+        if self.config['optimizer']['opt'] == 'adam':
+            optimizer = optim.Adam(filter_fn, lr=self.config['optimizer']['lr'], weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'AdamW':
+            torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
+                              weight_decay=self.config['optimizer']['weight_decay'], amsgrad=self.config['optimizer']['amsgrad'])
+        elif self.config['optimizer']['opt'] == 'sgd':
+            optimizer = optim.SGD(filter_fn, lr=self.config['optimizer']['lr'], momentum=self.config['momentum']['weight_decay'], weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'rmsprop':
+            optimizer = optim.RMSprop(filter_fn, lr=self.config['optimizer']['lr'], weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'adagrad':
+            optimizer = optim.Adagrad(filter_fn, lr=self.config['optimizer']['lr'], weight_decay=self.config['optimizer']['weight_decay'])
+        if self.config['optimizer']['opt_scheduler'] == 'none':
             return None, optimizer
-        elif self.config['opt_scheduler'] == 'step':
-            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['opt_decay_step'],
-                                                  gamma=self.config['opt_decay_rate'])
-        elif self.config['opt_scheduler'] == 'cos':
-            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['opt_restart'])
+        elif self.config['optimizer']['opt_scheduler'] == 'step':
+            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['optimizer']['opt_decay_step'],
+                                                  gamma=self.config['optimizer']['opt_decay_rate'])
+        elif self.config['optimizer']['opt_scheduler'] == 'cos':
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['optimizer']['opt_restart'])
 
         return scheduler, optimizer
     

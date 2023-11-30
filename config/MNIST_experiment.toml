@@ -3,12 +3,14 @@ device = "cuda"
 seed = 88888888
 epochs = 300
 batch_size=16
-opt = 'adam'
-lr = 0.025
-opt_scheduler = 'none'
-opt_decay_step = 'none'
-opt_decay_rate = 'none'
-opt_restart = 'none'
+
+[optimizer]
+    opt = 'adam'
+    lr = 0.025
+    opt_scheduler = 'none'
+    opt_decay_step = 'none'
+    opt_decay_rate = 'none'
+    opt_restart = 'none'
 
 
 [model]

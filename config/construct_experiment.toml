@@ -2,13 +2,14 @@ dataset = "construct"
 seed = 88888888
 epochs = 300
 batch_size=16
-opt = 'adam'
-lr = 0.005
-opt_scheduler = 'none'
-opt_decay_step = 'none'
-opt_decay_rate = 'none'
-opt_restart = 'none'
 device = "cuda"
+
+[optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0025
+    weight_decay=1e-05
+    amsgrad='True'
 
 [model]
 

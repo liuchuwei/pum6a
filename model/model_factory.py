@@ -37,10 +37,10 @@ class pum6a(nn.Module):
                 none
         '''
         activations = {
-            'relu': nn.ReLU(),
-            'sigmoid': nn.Sigmoid(),
-            'tanh': nn.Tanh(),
-            'softmax': nn.Softmax(),
+            'relu': torch.nn.ReLU(),
+            'sigmoid': torch.nn.Sigmoid(),
+            'tanh': torch.nn.Tanh(),
+            'softmax': torch.nn.Softmax(),
         }
 
         if name in activations.keys():
@@ -99,7 +99,8 @@ class pum6a(nn.Module):
 
         hidden_neurons = self.model_config['autoencoder']['hidden_neurons']
         self.layers_neurons_ = [1, *hidden_neurons]
-        self.latent = 10
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+        self.latent = self.model_config['autoencoder']['latent']
 
         self.encoder = nn.Sequential()
         self.decoder = nn.Sequential()
@@ -108,13 +109,27 @@ class pum6a(nn.Module):
 
             self.encoder.add_module("conv" + str(idx),
                 nn.Conv2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1], kernel_size=self.kernal_size))
-            self.encoder.add_module(self.hidden_activation + str(idx), self.activation)
+            self.encoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
 
 
-        self.encoder.add_module(nn.Flatten())
-        n_linear = self.n_features
-        self.encoder.add_module(nn.linear(n_linear ,self.latent))
-        self.encoder.add_module(self.encoder_activation)
+        self.encoder.add_module("faltten",nn.Flatten())
+        n_out_feat = (self.n_features[0] - len(hidden_neurons)*(self.kernal_size-1))
+        n_linear = n_out_feat**2*hidden_neurons[-1]
+        self.encoder.add_module("linear_last", nn.Linear(n_linear,self.latent))
+        self.encoder.add_module("out_acitvation",self.encoder_activation)
+
+        self.decoder.add_module("linear", nn.Linear(self.latent, n_linear))
+        self.decoder.add_module("input_activation", self.hidden_activation)
+        self.decoder.add_module("unflatten", nn.Unflatten(1, (self.layers_neurons_decoder_[0], n_out_feat, n_out_feat)))
+
+        for idx, layer in enumerate(self.layers_neurons_decoder_[:-1]):
+
+            self.decoder.add_module("convT" + str(idx),
+                nn.ConvTranspose2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1], kernel_size=self.kernal_size))
+            self.decoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
+
+        self.encoder.add_module("out_acitvation",self.decoder_activation)
+
 
     def build_AE(self):
 
