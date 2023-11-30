@@ -89,5 +89,5 @@ resquiggling
 
 4.2 preprocess
    ```shell
-   python pum6a.py preprocess --single $single_fast5 -o $output -g $genome.fa -r $transcript.fa -i $gene2transcripts.txt -b $bam
+   python run.py preprocess --single $single_fast5 -o $output -g $genome.fa -r $transcript.fa -i $gene2transcripts.txt -b $bam
    ```

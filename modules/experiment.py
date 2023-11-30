@@ -4,10 +4,9 @@ import argparse
 from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
-
-from model.model_factory import milpuAtt_construct
 from utils.train_utils import set_seed, Trainer
 from utils.bag_utils import Bags
+from model.model_factory import pum6a
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -49,17 +48,7 @@ def main(args):
         raise ValueError('Dataset not support')
 
     "4.load model"
-    model_config = config['model']
-
-    if config['dataset'] == "MNIST":
-
-        # model = milpuAtt_MNIST(model_config)
-        pass
-
-    elif config['dataset'] == "construct":
-
-        model = milpuAtt_construct(model_config)
-
+    model = pum6a(config['model'])
 
     "5.train model"
     trainer = Trainer(config=config,

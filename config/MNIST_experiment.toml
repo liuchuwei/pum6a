@@ -1,8 +1,7 @@
 dataset = "MNIST"
 device = "cuda"
 seed = 88888888
-dataset = "MNIST"
-epochs = 1000
+epochs = 300
 batch_size=16
 opt = 'adam'
 lr = 0.025
@@ -17,3 +16,13 @@ opt_restart = 'none'
     L=10  # Attention model input nodes
     D=10  # Attention model intermediate nodes
     K=1    # Attention model output nodes
+
+    [model.autoencoder]
+    type = 'conv'
+    kernal_size = 5
+    n_features = [28, 28]
+    hidden_neurons = [4, 8]
+    latent = 10
+    hidden_activation = 'relu'
+    encoder_activation = 'softmax'
+    decoder_activation = 'sigmoid'

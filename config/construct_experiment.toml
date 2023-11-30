@@ -11,6 +11,7 @@ opt_restart = 'none'
 device = "cuda"
 
 [model]
+
     device = "cuda"
 
     [model.attention]
@@ -19,6 +20,7 @@ device = "cuda"
     K=1    # Attention model output nodes
 
     [model.autoencoder]
+    type = 'linear'
     n_features = 2
     dropout_rate = 0.1
     hidden_neurons = [4, 2]
