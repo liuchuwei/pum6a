@@ -263,7 +263,7 @@ class Trainer(object):
                 bag_pro.append(torch.concat([item[0] for item in data_inst]))
                 bag_y.append(self.test_bag.bags_labels[bag_idx])
 
-                inst_pro.append(torch.concat([item[2].squeeze() for item in data_inst]))
+                inst_pro.append(torch.concat([item[1].squeeze() for item in data_inst]))
                 inst_y.append(torch.concat([self.test_bag.labels[item] for item in bag_idx]).float())
                 # bag_correct_c += bag_cor_c
                 # bag_correct_p += bag_cor_p

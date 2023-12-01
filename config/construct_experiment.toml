@@ -16,8 +16,8 @@ device = "cuda"
 
     device = "cuda"
 
-    [model.feature_extractor_1]
-    type = 'linear'
+    [model.feature_extractor]
+    type = 'conv'
     n_features = 2
     dropout_rate = 0.1
     hidden_neurons = [4, 2]
