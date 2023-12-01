@@ -22,7 +22,7 @@ def set_seed(seed: Optional[int] = 1):
     torch.cuda.manual_seed_all(seed)
 
 
-class MNIST_Trainer(object):
+class Trainer(object):
     """
     An object class for model training
     """
@@ -192,6 +192,7 @@ class MNIST_Trainer(object):
             self.optimizer.zero_grad()
 
             bag_scores[bag_idx] = torch.concat([item[0] for item in data_inst])
+            # bag_scores[bag_idx] = torch.stack([torch.max(item[2]) for item in data_inst]).unsqueeze(1)
 
             if batch % 5 == 0:
                 loss, current = loss.item(), (batch + 1) * self.config['batch_size']
@@ -326,7 +327,7 @@ class MNIST_Trainer(object):
         print("Done!")
 
 
-class Trainer(object):
+class Trainer_1(object):
 
     """
     An object class for model training
@@ -430,7 +431,7 @@ class Trainer(object):
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['optimizer']['opt_restart'])
 
         return scheduler, optimizer
-    
+
     def initNegLabel(self):
 
         """
