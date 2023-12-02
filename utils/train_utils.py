@@ -192,7 +192,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             bag_scores[bag_idx] = torch.concat([item[0] for item in data_inst])
-            # bag_scores[bag_idx] = torch.stack([torch.max(item[2]) for item in data_inst]).unsqueeze(1)
+            # bag_scores[bag_idx] = torch.stack([torch.max(item[1]) for item in data_inst]).unsqueeze(1)
 
             if batch % 5 == 0:
                 loss, current = loss.item(), (batch + 1) * self.config['batch_size']
@@ -244,6 +244,7 @@ class Trainer(object):
         bag_y = []
         inst_pro = []
         inst_y = []
+        original_y = []
         with torch.no_grad():
             for features, n_instance, bag_idx in self.test_loader:
                 idx = [np.sum(n_instance[:it]) for it in range(1, len(n_instance) + 1)]
@@ -265,10 +266,8 @@ class Trainer(object):
 
                 inst_pro.append(torch.concat([item[1].squeeze() for item in data_inst]))
                 inst_y.append(torch.concat([self.test_bag.labels[item] for item in bag_idx]).float())
-                # bag_correct_c += bag_cor_c
-                # bag_correct_p += bag_cor_p
-                # inst_correct += inst_cor
-                # inst_len += inst_num
+                original_y.append(torch.concat([self.test_bag.original_label[item] for item in bag_idx]).float())
+
 
         from sklearn.metrics import roc_auc_score
 
@@ -277,10 +276,18 @@ class Trainer(object):
         # bag_pi = self.decision_function()
         # bag_pi = bag_pi.reshape(-1)
         # bag_auc = roc_auc_score(torch.concat(bag_y).cpu(), bag_pi)
+        import pandas as pd
+        df = pd.DataFrame({'Att': torch.concat(inst_pro).cpu(),
+                           'type': torch.concat(original_y).cpu()})
+        group1 = df.groupby('type')
+
 
         print( f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
               f"Instance_auc: {(100 * ins_auc):>0.1f}%,"
               f"Avg loss: {test_loss:>8f} \n")
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', 5000)
+        print(group1.mean().T)
 
     def decision_function(self):
 

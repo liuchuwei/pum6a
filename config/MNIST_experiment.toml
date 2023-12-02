@@ -1,7 +1,8 @@
 dataset = "MNIST"
 device = "cuda"
 seed = 88888888
-epochs = 1000
+#seed = 555
+epochs = 300
 batch_size=16
 confactor='False'
 

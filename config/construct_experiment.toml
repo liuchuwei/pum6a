@@ -3,11 +3,12 @@ seed = 88888888
 epochs = 300
 batch_size=16
 device = "cuda"
+confactor='False'
 
 [optimizer]
 
     opt = 'AdamW'
-    lr = 0.0025
+    lr = 0.0001
     weight_decay=1e-05
     amsgrad='True'
     opt_scheduler='none'
@@ -17,15 +18,15 @@ device = "cuda"
     device = "cuda"
 
     [model.feature_extractor]
-    type = 'conv'
+    type = 'linear'
     n_features = 2
-    dropout_rate = 0.1
-    hidden_neurons = [4, 2]
+    dropout_rate = 0
+    hidden_neurons = [4, 8]
     batch_norm = 'True'
     hidden_activation = 'relu'
 
     [model.attention]
-    L=500  # Attention model input nodes
-    D=128  # Attention model intermediate nodes
-    K=1    # Attention model output nodes
+    L=8  # Attention model input nodes
+    D=4  # Attention model intermediate nodes
+    K=1  # Attention model output nodes
 

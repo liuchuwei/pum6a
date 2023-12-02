@@ -213,7 +213,7 @@ class Bags(data_utils.Dataset):
 
         bags_list = []
         labels_list = []
-
+        self.original_label = []
         for i in range(self.num_bag):
 
             bag_length = np.int32(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
@@ -229,6 +229,7 @@ class Bags(data_utils.Dataset):
             else:
                 labels_in_bag = self.data.targets[indices]
 
+            self.original_label.append(labels_in_bag)
             labels_in_bag = labels_in_bag == self.target
 
             bags_list.append(self.data.data[indices])
