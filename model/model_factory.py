@@ -301,8 +301,8 @@ class pum6a(nn.Module):
         '4. build logistic module'
         self.build_logistic()
 
-        '4. build autoencoder module'
-        self.build_AE()
+        # '4. build autoencoder module'
+        # self.build_AE()
 
     def _weightnoisyor(self,pij):
 
@@ -354,13 +354,17 @@ class pum6a(nn.Module):
 
         A = self.attention(H)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
+        pij = self._logistic(A)
         A = F.softmax(A, dim=1)  # softmax over N
 
         M = torch.mm(A, H)  # KxL
 
         Y_prob = self.classifier(M)
-        # Y_prob = self._weightnoisyor(A)
-        return Y_prob, A
+
+        pi = self._weightnoisyor(pij)
+        # pi = 1 - torch.prod(1-pij, dim = 1)
+
+        return Y_prob, A, pi, pij
 
     def _log_diverse_density(self, pi, y_bags):
         r'''
@@ -403,20 +407,72 @@ class pum6a(nn.Module):
 
         bag, bag_labels, n_instance = input
 
+        # idx_l1 = torch.where(bag_labels != 1)[0]
+        # if idx_l1.shape[0] > 0:
+        #     data_inst = torch.concat([bag[item] for item in idx_l1])
+        #     enc = self.encoder(data_inst)
+        #     dec = self.decoder(enc)
+        #     l1 = torch.nn.PairwiseDistance(p=2)(data_inst, dec)
+        #     data_inst_l1 = data_inst[torch.where(l1 < torch.quantile(l1, 1 - 0.06, dim=0))]
+        #     enc = self.encoder(data_inst_l1)
+        #     dec = self.decoder(enc)
+        #     loss1 = torch.nn.MSELoss()(data_inst_l1, dec)
+        # else:
+        #     loss1 = 0.01*(self.A**2+self.B**2)[0]
+        #
         data_inst = [self.Attforward(item) for item in bag]
-        idx_l1 = torch.where(bag_labels != 0)[0]
-        if idx_l1.shape[0] > 0:
+        idx_l2 = torch.where(bag_labels != 0)[0]
+        if idx_l2.shape[0] > 0:
 
-            l1 = [data_inst[item] for item in idx_l1]
-            p = torch.stack([item[0] for item in l1])
-            y = torch.stack([bag_labels[index] for index in idx_l1])
-            y[torch.where(y == -1)] = 0
+            l2 = [data_inst[item] for item in idx_l2]
+            p = torch.stack([item[0] for item in l2])
+            pi= torch.stack([item[2] for item in l2])
+            y = torch.stack([bag_labels[index] for index in idx_l2])
             y = y.to(self.device)
             p = p.to(self.device)
-            loss = torch.sum(-1. * (y * torch.log(p) + (1. - y) * torch.log(1. - p)))  # pro
-
+            pi = pi.to(self.device)
+            loss = -1*(self._log_diverse_density(pi, y)+1e-10) + 0.01*(self.A**2+self.B**2)[0]
+            y[torch.where(y == -1)] = 0
+            loss += torch.sum(-1. * (y * torch.log(p) + (1. - y) * torch.log(1. - p)))  # pro
+            # loss += -1*(self._log_diverse_density(p, y)+1e-10)
         else:
             loss = 0.01*(self.A**2+self.B**2)[0]
+        #
+        #
+        # idx_l3 = torch.where(bag_labels == 1)[0]
+        #
+        # if idx_l3.shape[0]>0:
+        #     att = [data_inst[item][1] for item in idx_l3]
+        #     neg_bag = []
+        #     pos_bag = []
+        #     for idx, item in enumerate(att):
+        #         if 0 < torch.sum(item >= 0.15) < len(item[0]):
+        #             neg_bag.append(bag[idx_l3[idx]].to(self.device)[(item < 0.15).squeeze()])
+        #             pos_bag.append(bag[idx_l3[idx]].to(self.device)[(item > 0.15).squeeze()])
+        #
+        #     if len(neg_bag)>0:
+        #         neg_bag = torch.concat(neg_bag)
+        #         neg_enc = self.encoder(neg_bag)
+        #         neg_dec = self.decoder(neg_enc)
+        #         loss3 = torch.nn.PairwiseDistance(p=2)(neg_bag, neg_dec).mean()
+        #     else:
+        #         loss3 = 0.01 * (self.A ** 2 + self.B ** 2)[0]
+        #
+        #     if len(pos_bag)>1:
+        #         if isinstance(pos_bag,list):
+        #             pos_bag = torch.concat(pos_bag)
+        #         pos_enc = self.encoder(pos_bag)
+        #         pos_dec = self.decoder(pos_enc)
+        #         loss4 = torch.nn.PairwiseDistance(p=2)(pos_bag, pos_dec).mean()
+        #     else:
+        #         loss4 = 0.01 * (self.A ** 2 + self.B ** 2)[0]
+        #
+        # else:
+        #     loss3 = 0.01*(self.A**2+self.B**2)[0]
+        #     loss4 = 0.01*(self.A**2+self.B**2)[0]
+        #
+        #
+        # loss = loss1 + loss2 + loss3 - loss4
 
         return loss, data_inst
 #
