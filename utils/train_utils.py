@@ -193,7 +193,10 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             # bag_scores[bag_idx] = torch.concat([item[0] for item in data_inst])
-            bag_scores[bag_idx] = torch.stack([item[2] for item in data_inst])
+            if self.config['model_chosen'] == 'puma':
+                bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
+            elif self.config['model_chosen'] == 'pum6a':
+                bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
             # bag_scores[bag_idx] = torch.stack([torch.max(item[1]) for item in data_inst]).unsqueeze(1)
 
             if batch % 5 == 0:
@@ -277,40 +280,53 @@ class Trainer(object):
                 # bag_cor_c, bag_cor_p, inst_cor, inst_num = self._process_decision_scores(
                 #     data_inst=data_inst, bag_idx=bag_idx)
 
-                bag_pro_att.append(torch.concat([item[0] for item in data_inst]))
-                bag_pro.append(torch.concat([item[2] for item in data_inst]))
+                bag_pro.append(torch.concat([item[0] for item in data_inst]))
+
+                if self.config['model_chosen'] == 'pum6a':
+                    bag_pro_att.append(torch.concat([item[2] for item in data_inst]))
                 bag_y.append(self.test_bag.bags_labels[bag_idx])
 
-                att_pro.append(torch.concat([item[1].squeeze() for item in data_inst]))
-                inst_pro.append(torch.concat([item[3].squeeze() for item in data_inst]))
+                inst_pro.append(torch.concat([item[1].squeeze() for item in data_inst]))
+                if self.config['model_chosen'] == 'pum6a':
+                    att_pro.append(torch.concat([item[3].squeeze() for item in data_inst]))
+
                 inst_y.append(torch.concat([self.test_bag.labels[item] for item in bag_idx]).float())
                 original_y.append(torch.concat([self.test_bag.original_label[item] for item in bag_idx]).float())
 
 
         from sklearn.metrics import roc_auc_score
 
-        bag_auc_att = roc_auc_score(torch.concat(bag_y).cpu(), torch.concat(bag_pro_att).cpu())
+        if self.config['model_chosen'] == 'pum6a':
+            bag_auc_att = roc_auc_score(torch.concat(bag_y).cpu(), torch.concat(bag_pro_att).cpu())
+            att_auc = roc_auc_score(torch.concat(inst_y).cpu(), torch.concat(att_pro).cpu())
+
         bag_auc = roc_auc_score(torch.concat(bag_y).cpu(), torch.concat(bag_pro).cpu())
         ins_auc = roc_auc_score(torch.concat(inst_y).cpu(), torch.concat(inst_pro).cpu())
-        att_auc = roc_auc_score(torch.concat(inst_y).cpu(), torch.concat(att_pro).cpu())
         # bag_pi = self.decision_function()
         # bag_pi = bag_pi.reshape(-1)
         # bag_auc = roc_auc_score(torch.concat(bag_y).cpu(), bag_pi)
         import pandas as pd
-        df = pd.DataFrame({'Att': torch.concat(inst_pro).cpu(),
-                           'type': torch.concat(original_y).cpu()})
-        group1 = df.groupby('type')
+        if self.config['model_chosen'] == 'pum6a':
+            df = pd.DataFrame({'Att': torch.concat(inst_pro).cpu(),
+                               'type': torch.concat(original_y).cpu()})
+            group1 = df.groupby('type')
 
         test_loss /= num_batches
-        print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
-              f"Bag_auc_att: {(100 * bag_auc_att):>0.1f}%, "
-              f"Instance_auc: {(100 * ins_auc):>0.1f}%, "
-              f"Instance_auc_att: {(100 * att_auc):>0.1f}%, "
-              f"Avg loss: {test_loss:>8f} \n")
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', 5000)
-        print(group1.mean().T)
+        if self.config['model_chosen'] == 'pum6a':
 
+            print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
+                  f"Bag_auc_att: {(100 * bag_auc_att):>0.1f}%, "
+                  f"Instance_auc: {(100 * ins_auc):>0.1f}%, "
+                  f"Instance_auc_att: {(100 * att_auc):>0.1f}%, "
+                  f"Avg loss: {test_loss:>8f} \n")
+            pd.set_option('display.max_columns', None)
+            pd.set_option('display.width', 5000)
+            print(group1.mean().T)
+
+        else:
+            print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
+                  f"Instance_auc: {(100 * ins_auc):>0.1f}%, "
+                  f"Avg loss: {test_loss:>8f} \n")
     def decision_function(self):
 
         # enable the evaluation mode

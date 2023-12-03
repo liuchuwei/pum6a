@@ -6,7 +6,7 @@ from argparse import ArgumentDefaultsHelpFormatter
 import toml
 from utils.train_utils import set_seed, Trainer
 from utils.bag_utils import Bags
-from model.model_factory import pum6a
+from model.model_factory import pum6a, puma
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -43,12 +43,21 @@ def main(args):
         train_bag = Bags(dataset="construct", train=True)
         test_bag = Bags(dataset="construct", train=False)
 
+    elif config['dataset'] == "annthyroid":
+
+        train_bag = Bags(dataset="annthyroid", train=True)
+        test_bag = Bags(dataset="annthyroid", train=False)
+
     else:
 
         raise ValueError('Dataset not support')
 
     "4.load model"
-    model = pum6a(config['model'])
+    # model = pum6a(config['model'])
+    if config['model_chosen']=='puma':
+        model = puma(config['model'])
+    elif config['model_chosen']=='pum6a':
+        model = pum6a(config['model'])
 
     "5.train model"
     trainer = Trainer(config=config,

@@ -111,6 +111,25 @@ class Bags(data_utils.Dataset):
 
         return bag, idx
 
+    def zscore_normalize(self, x):
+
+        r"""
+        Instance method to preform z_score normalization
+
+            Args:
+                x (numpy.array): numpy array for z_score normalization
+
+            Return:
+
+               X_inst (numpy.array): numpy array after z_score normalization
+        """
+
+        mean, std = np.mean(x, axis=0), np.std(x, axis=0)
+        X_inst = (x - mean) / std
+
+        return X_inst
+
+
     def obtain_dataset(self):
 
         '''
@@ -163,8 +182,10 @@ class Bags(data_utils.Dataset):
                 X_inst = X_inst[2500:,]
                 y_inst = y_inst[2500:,]
 
-            mean, std = np.mean(X_inst, axis=0), np.std(X_inst, axis=0)
-            X_inst = (X_inst - mean) / std
+            # mean, std = np.mean(X_inst, axis=0), np.std(X_inst, axis=0)
+            # X_inst = (X_inst - mean) / std
+
+            X_inst = self.zscore_normalize(X_inst)
 
             self.ndata = storeDataset()
             self.adata = storeDataset()
@@ -179,20 +200,29 @@ class Bags(data_utils.Dataset):
 
         elif self.dataset == "annthyroid":
 
+
             data = np.load("dataset/ADBench/2_annthyroid.npz", allow_pickle=True)
             X, y = data['X'], data['y']
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state = 42)
-
-            self.data = storeDataset()
+            X = self.zscore_normalize(X)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 
             if self.train:
-                self.data.data = X_train
-                self.data.targets = y_train
-            else:
-                self.data.data = X_test
-                self.data.targets = y_test
+                X_inst = X_train
+                y_inst = y_train
 
-            self.size = self.data.data.shape[0]
+            else:
+                X_inst = X_test
+                y_inst = y_test
+
+            self.ndata = storeDataset()
+            self.adata = storeDataset()
+
+            self.ndata.data = torch.FloatTensor(X_inst[np.where(y_inst==0)])
+            self.ndata.targets = torch.FloatTensor(y_inst[np.where(y_inst==0)])
+
+            self.adata.data = torch.FloatTensor(X_inst[np.where(y_inst==1)])
+            self.adata.targets = torch.FloatTensor(y_inst[np.where(y_inst==1)])
+
             self.target = 1
 
     def create_bag_label(self, labels_list: Optional[list] = None):

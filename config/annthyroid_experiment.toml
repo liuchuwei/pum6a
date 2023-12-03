@@ -1,0 +1,42 @@
+dataset = "annthyroid"
+model_chosen = 'pum6a'
+seed = 88888888
+epochs = 300
+batch_size=16
+device = "cuda"
+confactor='False'
+
+[optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0025
+    weight_decay=1e-05
+    amsgrad='True'
+    opt_scheduler='none'
+
+[model]
+
+    device = "cuda"
+
+    [model.feature_extractor]
+    type = 'linear'
+    n_features = 6
+    dropout_rate = 0
+    hidden_neurons = [4, 8]
+    batch_norm = 'True'
+    hidden_activation = 'relu'
+
+    [model.autoencoder]
+    type = 'linear'
+    n_features = 6
+    dropout_rate = 0.1
+    hidden_neurons = [2, 4]
+    batch_norm = 'True'
+    hidden_activation = 'relu'
+
+
+    [model.attention]
+    L=8  # Attention model input nodes
+    D=4  # Attention model intermediate nodes
+    K=1  # Attention model output nodes
+
