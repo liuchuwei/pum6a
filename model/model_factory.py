@@ -33,6 +33,7 @@ class pum6a(nn.Module):
         )
 
         self.model_config = model_config
+        self.pesu_bag = None
         self.build_model()
 
     def get_activation_by_name(self, name):
@@ -41,7 +42,7 @@ class pum6a(nn.Module):
         Instance method for building activation function
 
             Args:
-                name: activation name. possible value: relu、sigmoid、 tanh
+                name (str): activation name. possible value: relu、sigmoid、 tanh
 
             Return:
                 none
@@ -152,10 +153,131 @@ class pum6a(nn.Module):
             nn.Sigmoid()
         )
 
+    def build_logistic(self):
+
+        '''
+
+        Instance method for building logistic module
+
+        '''
 
         self.A = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
         self.A.grad = torch.tensor(torch.rand(1))
         self.B = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
+
+
+    def _logistic(self, att):
+
+        """
+        instance method to calculate instance probability according attention weight
+
+            Args:
+                att (torch.Tensor): Tensor representation of attention weight
+        """
+
+        return torch.sigmoid(self.A * att + self.B)
+
+
+    def build_linearAE(self):
+
+        r'''
+        Instance method for building linear autoencoder module according to config
+        '''
+
+        self.n_features = self.model_config['autoencoder']['n_features']
+        self.dropout_rate = self.model_config['autoencoder']['dropout_rate']
+        self.batch_norm = self.model_config['autoencoder']['batch_norm']
+        self.hidden_activation = self.model_config['autoencoder']['hidden_activation']
+
+        self.activation = self.get_activation_by_name(self.hidden_activation)
+        hidden_neurons = self.model_config['autoencoder']['hidden_neurons']
+        self.layers_neurons_ = [self.n_features, *hidden_neurons]
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+
+        self.encoder = torch.nn.Sequential()
+        self.decoder = torch.nn.Sequential()
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            if self.batch_norm:
+                self.encoder.add_module("batch_norm" + str(idx), torch.nn.BatchNorm1d(self.layers_neurons_[idx]))
+            self.encoder.add_module("linear" + str(idx),
+                                    torch.nn.Linear(self.layers_neurons_[idx], self.layers_neurons_[idx + 1]))
+            self.encoder.add_module(self.hidden_activation + str(idx), self.activation)
+            self.encoder.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            if self.batch_norm:
+                self.decoder.add_module("batch_norm" + str(idx),
+                                        torch.nn.BatchNorm1d(self.layers_neurons_decoder_[idx]))
+            self.decoder.add_module("linear" + str(idx), torch.nn.Linear(self.layers_neurons_decoder_[idx],
+                                                                         self.layers_neurons_decoder_[idx + 1]))
+            self.encoder.add_module(self.hidden_activation + str(idx), self.activation)
+            self.decoder.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
+
+    def build_convAE(self):
+
+        r'''
+        Instance method for building linear autoencoder module according to config
+        '''
+
+        self.n_features = self.model_config['autoencoder']['n_features']
+        self.kernal_size = self.model_config['autoencoder']['kernal_size']
+        self.hidden_activation = self.get_activation_by_name(self.model_config['autoencoder']['hidden_activation'])
+        self.encoder_activation = self.get_activation_by_name(self.model_config['autoencoder']['encoder_activation'])
+        self.decoder_activation = self.get_activation_by_name(self.model_config['autoencoder']['decoder_activation'])
+
+        hidden_neurons = self.model_config['autoencoder']['hidden_neurons']
+        self.layers_neurons_ = [1, *hidden_neurons]
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+        self.latent = self.model_config['autoencoder']['latent']
+
+        self.encoder = nn.Sequential()
+        self.decoder = nn.Sequential()
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+
+            self.encoder.add_module("conv" + str(idx),
+                nn.Conv2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1], kernel_size=self.kernal_size))
+            self.encoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
+
+
+        self.encoder.add_module("faltten",nn.Flatten())
+        n_out_feat = (self.n_features[0] - len(hidden_neurons)*(self.kernal_size-1))
+        n_linear = n_out_feat**2*hidden_neurons[-1]
+        self.encoder.add_module("linear_last", nn.Linear(n_linear,self.latent))
+        self.encoder.add_module("out_acitvation",self.encoder_activation)
+
+        self.decoder.add_module("linear", nn.Linear(self.latent, n_linear))
+        self.decoder.add_module("input_activation", self.hidden_activation)
+        self.decoder.add_module("unflatten", nn.Unflatten(1, (self.layers_neurons_decoder_[0], n_out_feat, n_out_feat)))
+
+        for idx, layer in enumerate(self.layers_neurons_decoder_[:-1]):
+
+            self.decoder.add_module("convT" + str(idx),
+                nn.ConvTranspose2d(self.layers_neurons_decoder_[idx], self.layers_neurons_decoder_[idx + 1], kernel_size=self.kernal_size))
+            self.decoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
+
+        self.encoder.add_module("out_acitvation",self.decoder_activation)
+
+
+    def build_AE(self):
+
+        r'''
+        Instance method for building autoencoder module according to config
+        '''
+
+        if self.model_config['autoencoder']['type'] == 'linear':
+
+            self.build_linearAE()
+
+        elif self.model_config['autoencoder']['type'] == 'conv':
+
+            self.build_convAE()
+
+        else:
+
+            raise ValueError('invalid autoencoder type!')
+
 
     def build_model(self):
 
@@ -173,8 +295,40 @@ class pum6a(nn.Module):
         '2. build attention module'
         self.build_attention()
 
-        '3. build logistic module'
+        '3. build classifier module'
         self.build_classifier()
+
+        '4. build logistic module'
+        self.build_logistic()
+
+        '4. build autoencoder module'
+        self.build_AE()
+
+    def _weightnoisyor(self,pij):
+
+        """
+        instance method to calculate instance weight
+        """
+        self.mu1 = 0
+        self.mu2 = 1
+        self.sigma1 = 0.1
+        self.sigma2 = 0.1
+
+        rv1 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu1), scale=torch.tensor(self.sigma1))
+        rv2 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu2), scale=torch.tensor(self.sigma2))
+        nbags = pij.size()[0]
+        ninstances = pij.size()[1]
+        pij = pij.reshape(nbags,ninstances)
+        ranks = torch.empty((nbags, ninstances), dtype = torch.float)
+        tmp = torch.argsort(pij, dim=1, descending=False)
+        for i in range(nbags):
+            ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+        w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+        w = torch.div(w,torch.sum(w, dim = 1).reshape(nbags,1))
+        pij = pij.to(self.device, non_blocking = True).float()
+        w = w.to(self.device, non_blocking = True).float()
+        noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min = 0, max = 1), dim = 1)
+        return noisyor
 
     def Attforward(self, x):
 
@@ -205,7 +359,7 @@ class pum6a(nn.Module):
         M = torch.mm(A, H)  # KxL
 
         Y_prob = self.classifier(M)
-
+        # Y_prob = self._weightnoisyor(A)
         return Y_prob, A
 
     def _log_diverse_density(self, pi, y_bags):
@@ -221,19 +375,13 @@ class pum6a(nn.Module):
 
         z = torch.where(y_bags == -1)[0]
         if z.nelement() > 0:
-            y = torch.zeros(len(y_bags)).to(self.device)
-            y[z] = 1
-            p = 1-pi
-            zero_sum = torch.sum(-1. * (y * torch.log(p) + (1. - y) * torch.log(1. - p)))
+            zero_sum = torch.sum(torch.log(1 - pi[z] + 1e-10))
         else:
             zero_sum = torch.tensor(0).float()
 
         o = torch.where(y_bags == 1)[0]
         if o.nelement() > 0:
-            y = torch.zeros(len(y_bags)).to(self.device)
-            y[o] = 1
-            p = pi
-            one_sum = torch.sum(-1. * (y * torch.log(p) + (1. - y) * torch.log(1. - p)))
+            one_sum = torch.sum(torch.log(pi[o] + 1e-10))
         else:
             one_sum = torch.tensor(0).float()
         return zero_sum + one_sum
@@ -258,11 +406,15 @@ class pum6a(nn.Module):
         data_inst = [self.Attforward(item) for item in bag]
         idx_l1 = torch.where(bag_labels != 0)[0]
         if idx_l1.shape[0] > 0:
+
             l1 = [data_inst[item] for item in idx_l1]
-            pi = torch.stack([item[0] for item in l1])
+            p = torch.stack([item[0] for item in l1])
             y = torch.stack([bag_labels[index] for index in idx_l1])
             y[torch.where(y == -1)] = 0
-            loss = torch.sum(-1. * (y * torch.log(pi) + (1. - y) * torch.log(1. - pi)))
+            y = y.to(self.device)
+            p = p.to(self.device)
+            loss = torch.sum(-1. * (y * torch.log(p) + (1. - y) * torch.log(1. - p)))  # pro
+
         else:
             loss = 0.01*(self.A**2+self.B**2)[0]
 

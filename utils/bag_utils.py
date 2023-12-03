@@ -49,8 +49,11 @@ class Bags(data_utils.Dataset):
     def __init__(self,
                  dataset: Optional[str]="MNIST",
                  num_bag: Optional[int]=250,
-                 mean_bag_length: Optional[int]=10,
-                 var_bag_length: Optional[int]=2,
+                 mean_nbag_length: Optional[int]=10,
+                 var_nbag_length: Optional[int]=2,
+                 mean_abag_length: Optional[int]=4,
+                 var_abag_length: Optional[int]=1,
+                 confactor: Optional[int]=0.3,
                  n_pos: Optional[int]=50,
                  seed: Optional[int]=8888888,
                  train: Optional[bool]=True):
@@ -61,8 +64,11 @@ class Bags(data_utils.Dataset):
             Args:
                 dataset (str): A dataset used for genrating bag dataset. possible dataset: MNIST、Cifar10、annthyroid
                 num_bag: Number of bags to generate
-                mean_bag_length: Mean of bags length
-                var_bag_length: Variance of bags length
+                mean_nbag_length: Mean of normal bags length
+                var_nbag_length: Variance of normal bags length
+                mean_abag_length: Mean of abnormal bags length
+                var_abag_length: Variance of abnormal bags length
+                confactor: Ratio of normal bags and abnormal bags
                 n_pos: Number of positive bags
                 seed: Random seed
                 train: whether the dataset is used for training model or testing model
@@ -78,8 +84,11 @@ class Bags(data_utils.Dataset):
             raise ValueError("Invalid dataset. possible dataset: MNIST、construct、annthyroid")
 
         self.dataset = dataset
-        self.mean_bag_length = mean_bag_length
-        self.var_bag_length = var_bag_length
+        self.mean_nbag_length = mean_nbag_length
+        self.var_nbag_length = var_nbag_length
+        self.mean_abag_length = mean_abag_length
+        self.var_abag_length = var_abag_length
+        self.confactor = 0.3
         self.n_pos = n_pos
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)
@@ -117,8 +126,9 @@ class Bags(data_utils.Dataset):
             ])
 
             self.target = 9
-
             self.data = storeDataset()
+            self.adata = storeDataset()
+            self.ndata = storeDataset()
 
             if self.train:
                 loader = data_utils.DataLoader(datasets.MNIST("dataset",train=True,download=True,transform=pipeline),
@@ -134,7 +144,11 @@ class Bags(data_utils.Dataset):
                 self.data.data = batch_data
                 self.data.targets = batch_labels
 
-            self.size = self.data.data.size()[0]
+            self.ndata.data = torch.FloatTensor(self.data.data[torch.where(self.data.targets!=self.target)])
+            self.ndata.targets = self.data.targets[torch.where(self.data.targets!=self.target)].float()
+
+            self.adata.data = torch.FloatTensor(self.data.data[torch.where(self.data.targets==self.target)])
+            self.adata.targets = self.data.targets[torch.where(self.data.targets==self.target)].float()
 
         elif self.dataset == "construct":
 
@@ -152,12 +166,15 @@ class Bags(data_utils.Dataset):
             mean, std = np.mean(X_inst, axis=0), np.std(X_inst, axis=0)
             X_inst = (X_inst - mean) / std
 
-            self.data = storeDataset()
+            self.ndata = storeDataset()
+            self.adata = storeDataset()
 
-            self.data.data = torch.FloatTensor(X_inst)
-            self.data.targets = torch.FloatTensor(y_inst)
+            self.ndata.data = torch.FloatTensor(X_inst[np.where(y_inst==0)])
+            self.ndata.targets = torch.FloatTensor(y_inst[np.where(y_inst==0)])
 
-            self.size = self.data.data.shape[0]
+            self.adata.data = torch.FloatTensor(X_inst[np.where(y_inst==1)])
+            self.adata.targets = torch.FloatTensor(y_inst[np.where(y_inst==1)])
+
             self.target = 1
 
         elif self.dataset == "annthyroid":
@@ -216,28 +233,54 @@ class Bags(data_utils.Dataset):
         self.original_label = []
         for i in range(self.num_bag):
 
-            bag_length = np.int32(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
-            # bag_length = np.int32(10)
+            label = np.random.binomial(1, self.confactor, size=1)[0]
+            n_bag_length = np.int32(self.r.normal(self.mean_nbag_length, self.var_nbag_length, 1))
+            a_bag_length = np.int32(self.r.normal(self.mean_abag_length, self.var_abag_length, 1))
 
-            if bag_length < 1:
-                bag_length = 1
+            if label == 0:
+                bag_length = n_bag_length + a_bag_length
 
-            indices = torch.LongTensor(self.r.randint(0, self.size, bag_length))
+                if bag_length < 1:
+                    bag_length = 1
 
-            if not torch.is_tensor(self.data.targets):
-                labels_in_bag = torch.tensor(self.data.targets)[indices]
-            else:
-                labels_in_bag = self.data.targets[indices]
+                indices = torch.LongTensor(self.r.randint(0, len(self.ndata.targets), bag_length))
 
-            self.original_label.append(labels_in_bag)
-            labels_in_bag = labels_in_bag == self.target
+                if not torch.is_tensor(self.ndata.targets):
+                    labels_in_bag = torch.tensor(self.ndata.targets)[indices]
+                else:
+                    labels_in_bag = self.ndata.targets[indices]
 
-            bags_list.append(self.data.data[indices])
-            labels_list.append(labels_in_bag)
+                self.original_label.append(labels_in_bag)
+                labels_in_bag = labels_in_bag == self.target
+                bags_list.append(self.ndata.data[indices])
+                labels_list.append(labels_in_bag)
 
-        # if self.train:
+            elif label == 1:
+
+                if a_bag_length < 1:
+                    a_bag_length = 1
+
+                n_indices = torch.LongTensor(self.r.randint(0, len(self.ndata.targets), n_bag_length))
+                a_indices = torch.LongTensor(self.r.randint(0, len(self.adata.targets), a_bag_length))
+
+                if not torch.is_tensor(self.ndata.targets):
+                    labels_in_bag = torch.concat([torch.tensor(self.ndata.targets[n_indices]), torch.tensor(self.adata.targets[a_indices])])
+                else:
+                    labels_in_bag = torch.concat([self.ndata.targets[n_indices],self.adata.targets[a_indices]])
+
+                self.original_label.append(labels_in_bag)
+                labels_in_bag = labels_in_bag == self.target
+
+                if n_bag_length<1:
+                    bags_list.append(self.adata.data[a_indices])
+                else:
+                    bags_list.append(torch.concat([self.ndata.data[n_indices], self.adata.data[a_indices]]))
+
+                labels_list.append(labels_in_bag)
+
 
         self.create_bag_label(labels_list)
-
+        if self.train:
+            self.pos_bag = [bags_list[item] for item in torch.where(self.bags_labels==1)[0]]
         return bags_list, labels_list
 
