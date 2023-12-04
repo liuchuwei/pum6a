@@ -304,7 +304,7 @@ class iAE(nn.Module):
                         iAUC_loss += torch.nn.Sigmoid()(i - j)
 
                 iAUC_loss /= (len(l2_dist)*len(l3_dist))
-                loss += iAUC_loss
+                loss -= iAUC_loss
 
         return loss, data_inst
 

@@ -88,7 +88,7 @@ class Bags(data_utils.Dataset):
         self.var_nbag_length = var_nbag_length
         self.mean_abag_length = mean_abag_length
         self.var_abag_length = var_abag_length
-        self.confactor = 0.3
+        self.confactor = confactor
         self.n_pos = n_pos
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)

@@ -193,10 +193,10 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             # bag_scores[bag_idx] = torch.concat([item[0] for item in data_inst])
-            if self.config['model_chosen'] == 'puma':
-                bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
-            elif self.config['model_chosen'] == 'pum6a':
-                bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
+            # if self.config['model_chosen'] == 'puma':
+            #     bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
+            # elif self.config['model_chosen'] == 'pum6a':
+            bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
             # bag_scores[bag_idx] = torch.stack([torch.max(item[1]) for item in data_inst]).unsqueeze(1)
 
             if batch % 5 == 0:
