@@ -6,7 +6,7 @@ from argparse import ArgumentDefaultsHelpFormatter
 import toml
 from utils.train_utils import set_seed, Trainer
 from utils.bag_utils import Bags
-from model.model_factory import pum6a, puma
+from model.model_factory import pum6a, puma, iAE
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -58,6 +58,8 @@ def main(args):
         model = puma(config['model'])
     elif config['model_chosen']=='pum6a':
         model = pum6a(config['model'])
+    elif config['model_chosen']=='iAE':
+        model = iAE(config['model'])
 
     "5.train model"
     trainer = Trainer(config=config,

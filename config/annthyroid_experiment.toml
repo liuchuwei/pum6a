@@ -1,5 +1,5 @@
 dataset = "annthyroid"
-model_chosen = 'pum6a'
+model_chosen = 'iAE'
 seed = 88888888
 epochs = 300
 batch_size=16
@@ -17,6 +17,7 @@ confactor='False'
 [model]
 
     device = "cuda"
+    confactor = 0.1
 
     [model.feature_extractor]
     type = 'linear'
