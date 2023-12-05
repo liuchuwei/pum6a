@@ -1,14 +1,16 @@
 dataset = "construct"
 seed = 88888888
-epochs = 300
+epochs = 1000
 batch_size=16
 device = "cuda"
-confactor='False'
+model_chosen = 'RF'
+confactor = 0.1
 
 [optimizer]
 
     opt = 'AdamW'
     lr = 0.0025
+#    lr = 0.005
     weight_decay=1e-05
     amsgrad='True'
     opt_scheduler='none'
@@ -16,6 +18,7 @@ confactor='False'
 [model]
 
     device = "cuda"
+    confactor = 0.1
 
     [model.feature_extractor]
     type = 'linear'
@@ -33,6 +36,13 @@ confactor='False'
     batch_norm = 'True'
     hidden_activation = 'relu'
 
+    [model.puIF]
+    type = 'linear'
+    n_features = 2
+    dropout_rate = 0.1
+    hidden_neurons = [2, 4, 1]
+    batch_norm = 'True'
+    hidden_activation = 'relu'
 
     [model.attention]
     L=8  # Attention model input nodes

@@ -2,6 +2,176 @@ import torch.nn as nn
 from typing import *
 import torch
 import torch.nn.functional as F
+from sklearn.ensemble import IsolationForest
+
+class RF(object):
+
+    r"""
+    The RF model.
+
+    """
+    def __init__(self, model_config: Dict):
+        r"""
+                Initialization function for the class
+
+                    Args:
+                            model_config (Dict): A dictionary containing model configurations.
+
+                    Returns:
+                            None
+                """
+
+        super(RF, self).__init__()
+
+        self.model_config = model_config
+
+        self.device = (
+            "cuda"
+            if torch.cuda.is_available() and model_config['device'] == 'cuda'
+            else "mps"
+            if torch.backends.mps.is_available()
+            else "cpu"
+        )
+    def _weightnoisyor(self,pij):
+
+        """
+        instance method to calculate instance weight
+        """
+        self.mu1 = 0
+        self.mu2 = 1
+        self.sigma1 = 0.1
+        self.sigma2 = 0.1
+
+        rv1 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu1), scale=torch.tensor(self.sigma1))
+        rv2 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu2), scale=torch.tensor(self.sigma2))
+        nbags = 1
+        ninstances = pij.size()[0]
+        pij = pij.reshape(nbags,ninstances)
+        ranks = torch.empty((nbags, ninstances), dtype = torch.float)
+        tmp = torch.argsort(pij, dim=1, descending=False)
+        for i in range(nbags):
+            ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+        w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+        w = torch.div(w,torch.sum(w, dim = 1).reshape(nbags,1))
+        pij = pij.to(self.device, non_blocking = True).float()
+        w = w.to(self.device, non_blocking = True).float()
+        noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min = 0, max = 1), dim = 1)
+        return noisyor
+
+class puIF(torch.nn.Module):
+    r"""
+    The puIF model.
+
+    """
+    def __init__(self, model_config: Dict):
+        r"""
+                Initialization function for the class
+
+                    Args:
+                            model_config (Dict): A dictionary containing model configurations.
+
+                    Returns:
+                            None
+                """
+
+        super(puIF, self).__init__()
+
+        self.model_config = model_config
+        self.build_model()
+
+        self.device = (
+            "cuda"
+            if torch.cuda.is_available() and model_config['device'] == 'cuda'
+            else "mps"
+            if torch.backends.mps.is_available()
+            else "cpu"
+        )
+    def _weightnoisyor(self,pij):
+
+        """
+        instance method to calculate instance weight
+        """
+        self.mu1 = 0
+        self.mu2 = 1
+        self.sigma1 = 0.1
+        self.sigma2 = 0.1
+
+        rv1 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu1), scale=torch.tensor(self.sigma1))
+        rv2 = torch.distributions.normal.Normal(loc=torch.tensor(self.mu2), scale=torch.tensor(self.sigma2))
+        nbags = 1
+        ninstances = pij.size()[0]
+        pij = pij.reshape(nbags,ninstances)
+        ranks = torch.empty((nbags, ninstances), dtype = torch.float)
+        tmp = torch.argsort(pij, dim=1, descending=False)
+        for i in range(nbags):
+            ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+        w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+        w = torch.div(w,torch.sum(w, dim = 1).reshape(nbags,1))
+        pij = pij.to(self.device, non_blocking = True).float()
+        w = w.to(self.device, non_blocking = True).float()
+        noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min = 0, max = 1), dim = 1)
+        return noisyor
+
+    def get_activation_by_name(self, name):
+
+        r'''
+        Instance method for building activation function
+
+            Args:
+                name (str): activation name. possible value: relu、sigmoid、 tanh
+
+            Return:
+                none
+        '''
+        activations = {
+            'relu': torch.nn.ReLU(),
+            'sigmoid': torch.nn.Sigmoid(),
+            'tanh': torch.nn.Tanh(),
+            'softmax': torch.nn.Softmax(),
+        }
+
+        if name in activations.keys():
+            return activations[name]
+
+        else:
+            raise ValueError(name, "is not a valid activation function")
+
+    def build_classifer(self):
+
+        self.n_features = self.model_config['puIF']['n_features']
+        self.dropout_rate = self.model_config['puIF']['dropout_rate']
+        self.batch_norm = self.model_config['puIF']['batch_norm']
+        self.hidden_activation = self.model_config['puIF']['hidden_activation']
+
+        self.activation = self.get_activation_by_name(self.hidden_activation)
+        hidden_neurons = self.model_config['puIF']['hidden_neurons']
+        self.layers_neurons_ = [self.n_features, *hidden_neurons]
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+
+        self.linear = nn.Sequential()
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            if self.batch_norm:
+                self.linear.add_module("batch_norm" + str(idx), torch.nn.BatchNorm1d(self.layers_neurons_[idx]))
+            self.linear.add_module("linear" + str(idx),
+                                    torch.nn.Linear(self.layers_neurons_[idx], self.layers_neurons_[idx + 1]))
+            self.linear.add_module(self.hidden_activation + str(idx), self.activation)
+            self.linear.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
+
+
+        self.B = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
+
+    def build_model(self):
+
+        "1. build isolation forest model"
+        self.clf = IsolationForest(contamination=0.25, random_state=888)
+
+        "2. build classifer"
+        self.build_classifer()
+
+    def forward(self):
+
+        pass
 
 class iAE(nn.Module):
 
@@ -479,8 +649,9 @@ class pum6a(nn.Module):
             Args:
                 att (torch.Tensor): Tensor representation of attention weight
         """
-
-        return torch.sigmoid(self.A * att + self.B)
+        # pij = 1/(-torch.exp(self.A * att) + self.B**2 + 1)
+        pij = torch.sigmoid(self.A * att + self.B)
+        return pij
 
 
     def build_linearAE(self):

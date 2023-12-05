@@ -22,9 +22,191 @@ def set_seed(seed: Optional[int] = 1):
     torch.cuda.manual_seed_all(seed)
 
 
-class Trainer(object):
+
+class RF_Trainer(object):
+
     """
-    An object class for model training
+    An object class for puIF model training
+    """
+
+    def __init__(self,
+                 config: Optional[Dict] = None,
+                 model=None, train_bag=None,
+                 test_bag=None):
+
+        r"""
+        Initialization function for the class
+
+            Args:
+                    config (Dict): A dictionary containing training configurations.
+                    model: Model to train
+                    train_bag: Bag dataset for model training
+                    test_bag: Bag dataset for model testing
+
+            Returns:
+                    None
+        """
+
+        self.config = config
+        self.model = model
+        self.train_bag = train_bag
+        self.test_bag = test_bag
+
+    def run(self):
+        '1.Build random forest model'
+        X = torch.concat(self.train_bag.bags)
+        label_len = [len(item) for item in self.train_bag.bags]
+        Y = []
+        for idx, item in enumerate(self.train_bag.bags_labels):
+            Y.append(item.repeat(label_len[idx]))
+        Y = torch.concat(Y)
+
+        from sklearn.ensemble import RandomForestRegressor
+        clf = RandomForestRegressor(max_depth=2, random_state=0)
+        clf.fit(X, Y)
+
+        "2.Testing result"
+        ins_pro = []
+        bag_pro = []
+        for item in self.test_bag.bags:
+
+            p = clf.predict(item)
+            p = torch.Tensor(p)
+            ins_pro.append(p)
+            bag_pro.append(self.model._weightnoisyor(p))
+
+        from sklearn.metrics import roc_auc_score
+        inst_y = torch.concat(self.test_bag.labels).float()
+        inst_pro = torch.concat(ins_pro).squeeze().detach().numpy()
+
+        bag_y = self.test_bag.bags_labels
+        bag_auc = roc_auc_score(bag_y.cpu(), torch.concat(bag_pro).cpu().squeeze().detach().numpy())
+        ins_auc = roc_auc_score(inst_y.cpu(), inst_pro)
+
+        print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
+              f"Instance_auc: {(100 * ins_auc):>0.1f}%.")
+
+class puIF_Trainer(object):
+
+    """
+    An object class for puIF model training
+    """
+
+    def __init__(self,
+                 config: Optional[Dict] = None,
+                 model=None, train_bag=None,
+                 test_bag=None):
+
+        r"""
+        Initialization function for the class
+
+            Args:
+                    config (Dict): A dictionary containing training configurations.
+                    model: Model to train
+                    train_bag: Bag dataset for model training
+                    test_bag: Bag dataset for model testing
+
+            Returns:
+                    None
+        """
+
+        self.config = config
+        self.model = model
+        self.train_bag = train_bag
+        self.test_bag = test_bag
+        self.scheduler, self.optimizer = self.build_optimizer(params=model.parameters())
+
+    def build_optimizer(self, params, weight_decay=0.0):
+
+        r"""
+        instance method for building optimizer
+
+            Args:
+                params: model params
+                weight_decay: learning rate weight decay
+
+            Return:
+                none
+
+        """
+        filter_fn = filter(lambda p: p.requires_grad, params)
+        if self.config['optimizer']['opt'] == 'adam':
+            optimizer = optim.Adam(filter_fn, lr=self.config['optimizer']['lr'],
+                                   weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'AdamW':
+            optimizer = torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
+                                          weight_decay=self.config['optimizer']['weight_decay'],
+                                          amsgrad=self.config['optimizer']['amsgrad'])
+        elif self.config['optimizer']['opt'] == 'sgd':
+            optimizer = optim.SGD(filter_fn, lr=self.config['optimizer']['lr'],
+                                  momentum=self.config['momentum']['weight_decay'],
+                                  weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'rmsprop':
+            optimizer = optim.RMSprop(filter_fn, lr=self.config['optimizer']['lr'],
+                                      weight_decay=self.config['optimizer']['weight_decay'])
+        elif self.config['optimizer']['opt'] == 'adagrad':
+            optimizer = optim.Adagrad(filter_fn, lr=self.config['optimizer']['lr'],
+                                      weight_decay=self.config['optimizer']['weight_decay'])
+        if self.config['optimizer']['opt_scheduler'] == 'none':
+            return None, optimizer
+        elif self.config['optimizer']['opt_scheduler'] == 'step':
+            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['optimizer']['opt_decay_step'],
+                                                  gamma=self.config['optimizer']['opt_decay_rate'])
+        elif self.config['optimizer']['opt_scheduler'] == 'cos':
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['optimizer']['opt_restart'])
+
+        return scheduler, optimizer
+
+    def run(self):
+
+        "1.Train isolation model"
+        X = torch.concat(self.train_bag.bags)
+        self.model.clf.fit(X)
+
+        "2.Get instance class"
+        y = torch.Tensor(self.model.clf.predict(X))
+
+        "3.Train nontraditional classifier"
+        for t in range(self.config['epochs']):
+            self.model.train()
+            print(f"Epoch {t + 1}\n-------------------------------")
+            lin = self.model.linear(X)
+            ps = 1/(1+self.model.B**2 + torch.exp(-lin))
+            y[torch.where(y == -1)] = 0
+            loss = torch.sum(-1. * (y * torch.log(ps) + (1. - y) * torch.log(1. - ps)))
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            print(f"likihood_loss: {(loss):>0.1f}, ")
+        print("Done!")
+
+        "4.Testing result"
+        self.model.eval()
+        ins_pro = []
+        bag_pro = []
+        for item in self.test_bag.bags:
+            lin = self.model.linear(item)
+            ps = 1/(1+self.model.B**2 + torch.exp(-lin))
+            c_hat = 1/(1+self.model.B**2)
+            p = ps/c_hat
+            ins_pro.append(p)
+            bag_pro.append(self.model._weightnoisyor(p))
+
+        from sklearn.metrics import roc_auc_score
+        inst_y = torch.concat(self.test_bag.labels).float()
+        inst_pro = torch.concat(ins_pro).squeeze().detach().numpy()
+
+        bag_y = self.test_bag.bags_labels
+        bag_auc = roc_auc_score(bag_y.cpu(), torch.concat(bag_pro).cpu().squeeze().detach().numpy())
+        ins_auc = roc_auc_score(inst_y.cpu(), inst_pro)
+
+        print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
+              f"Instance_auc: {(100 * ins_auc):>0.1f}%.")
+
+class ReTrainer(object):
+
+    """
+    An object class for model training with self-adaptive process to select most reliable negative bags
     """
 
     def __init__(self,

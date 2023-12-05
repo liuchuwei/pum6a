@@ -55,8 +55,8 @@ class Bags(data_utils.Dataset):
                  var_abag_length: Optional[int]=1,
                  confactor: Optional[int]=0.3,
                  n_pos: Optional[int]=50,
-                 seed: Optional[int]=8888888,
-                 train: Optional[bool]=True):
+                 seed: Optional[int]=8888888
+                 ):
 
         r'''
         Initialization function for the class
@@ -80,9 +80,6 @@ class Bags(data_utils.Dataset):
                 ValueError: Raises an exception when some of the listed arguments do not follow the allowed conventions
         '''
 
-        if dataset not in ['MNIST', 'construct', 'annthyroid']:
-            raise ValueError("Invalid dataset. possible dataset: MNIST、construct、annthyroid")
-
         self.dataset = dataset
         self.mean_nbag_length = mean_nbag_length
         self.var_nbag_length = var_nbag_length
@@ -92,8 +89,6 @@ class Bags(data_utils.Dataset):
         self.n_pos = n_pos
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)
-        self.train = train
-
         self.bags, self.labels = self.create_bag()
 
         # self.__getitem__(7)
@@ -104,9 +99,6 @@ class Bags(data_utils.Dataset):
     def __getitem__(self, index):
 
         bag = [self.bags[index], index]
-        # bag = bag.unsqueeze(0)
-        # label = [max(self.labels[index]), self.labels[index]]
-        # label = [self.bags_labels[index], self.labels[index]]
         idx = index
 
         return bag, idx
@@ -136,181 +128,116 @@ class Bags(data_utils.Dataset):
         Instance method for obtaining dataset
         '''
 
-        if self.dataset == "MNIST":
+        if self.dataset == "construct":
 
-            '1.MNIST'
-            pipeline = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.1307,),(0.3081,))
-            ])
+            bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
 
-            self.target = 9
-            self.data = storeDataset()
-            self.adata = storeDataset()
-            self.ndata = storeDataset()
+        elif self.dataset == "MNIST":
 
-            if self.train:
-                loader = data_utils.DataLoader(datasets.MNIST("dataset",train=True,download=True,transform=pipeline),
-                                               batch_size=60000,
-                                               shuffle=False)
-            else:
+            bag = Bags(dataset="MNIST")
 
-                loader = data_utils.DataLoader(datasets.MNIST("dataset",train=False,download=True,transform=pipeline),
-                                               batch_size=10000,
-                                               shuffle=False)
+        elif self.dataset == "MUSK1":
 
-            for (batch_data, batch_labels) in loader:
-                self.data.data = batch_data
-                self.data.targets = batch_labels
+            bag = Bags(dataset="MUSK1")
 
-            self.ndata.data = torch.FloatTensor(self.data.data[torch.where(self.data.targets!=self.target)])
-            self.ndata.targets = self.data.targets[torch.where(self.data.targets!=self.target)].float()
+        elif self.dataset == "MUSK2":
 
-            self.adata.data = torch.FloatTensor(self.data.data[torch.where(self.data.targets==self.target)])
-            self.adata.targets = self.data.targets[torch.where(self.data.targets==self.target)].float()
+            bag = Bags(dataset="MUSK2")
 
-        elif self.dataset == "construct":
+        elif self.dataset == "FOX":
 
-            '2.construct'
+            bag = Bags(dataset="FOX")
 
-            if self.train:
-                bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
-                X_inst = X_inst[:2500,]
-                y_inst = y_inst[:2500,]
-            else:
-                bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
-                X_inst = X_inst[2500:,]
-                y_inst = y_inst[2500:,]
+        elif self.dataset == "TIGER":
 
-            # mean, std = np.mean(X_inst, axis=0), np.std(X_inst, axis=0)
-            # X_inst = (X_inst - mean) / std
+            bag = Bags(dataset="TIGER")
 
-            X_inst = self.zscore_normalize(X_inst)
+        elif self.dataset == "ELEPHANT":
 
-            self.ndata = storeDataset()
-            self.adata = storeDataset()
+            bag = Bags(dataset="ELEPHANT")
 
-            self.ndata.data = torch.FloatTensor(X_inst[np.where(y_inst==0)])
-            self.ndata.targets = torch.FloatTensor(y_inst[np.where(y_inst==0)])
+        elif self.dataset == "Annthyroid":
 
-            self.adata.data = torch.FloatTensor(X_inst[np.where(y_inst==1)])
-            self.adata.targets = torch.FloatTensor(y_inst[np.where(y_inst==1)])
+            bag = Bags(dataset="Annthyroid")
 
-            self.target = 1
+        elif self.dataset == "PageBlock":
 
-        elif self.dataset == "annthyroid":
+            bag = Bags(dataset="PageBlock")
 
+        elif self.dataset == "SpamBase":
 
-            data = np.load("dataset/ADBench/2_annthyroid.npz", allow_pickle=True)
-            X, y = data['X'], data['y']
-            X = self.zscore_normalize(X)
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+            bag = Bags(dataset="SpamBase")
 
-            if self.train:
-                X_inst = X_train
-                y_inst = y_train
+        elif self.dataset == "Waveform":
 
-            else:
-                X_inst = X_test
-                y_inst = y_test
+            bag = Bags(dataset="Waveform")
 
-            self.ndata = storeDataset()
-            self.adata = storeDataset()
+        elif self.dataset == "Cardio":
 
-            self.ndata.data = torch.FloatTensor(X_inst[np.where(y_inst==0)])
-            self.ndata.targets = torch.FloatTensor(y_inst[np.where(y_inst==0)])
+            bag = Bags(dataset="Cardio")
 
-            self.adata.data = torch.FloatTensor(X_inst[np.where(y_inst==1)])
-            self.adata.targets = torch.FloatTensor(y_inst[np.where(y_inst==1)])
+        elif self.dataset == "Cardiotoc":
 
-            self.target = 1
+            bag = Bags(dataset="Cardiotoc")
 
-    def create_bag_label(self, labels_list: Optional[list] = None):
+        elif self.dataset == "Internet":
 
-        r'''
+            bag = Bags(dataset="Internet")
 
-        Instance method for generating bag pu (positive and unlabeled) labels
+        elif self.dataset == "Landsat":
 
-            Args:
-            labels_list: Instance labels list for generating bag pu labels.
+            bag = Bags(dataset="Landsat")
 
-            Returns:
-                    None
-        '''
+        elif self.dataset == "Letter":
 
-        pos = [max(item) for item in labels_list]
-        pos_idx = np.random.choice(np.where(pos)[0], size=self.n_pos, replace=False)
-        s = np.zeros(len(pos))
-        s[pos_idx] = 1
+            bag = Bags(dataset="Letter")
 
-        # neg_idx = np.random.choice(np.where(s == 0)[0], size=self.n_pos, replace=False)
-        # s[neg_idx] = -1
-        if self.train:
-            self.bags_labels = torch.tensor(s)
+        elif self.dataset == "Mammog":
+
+            bag = Bags(dataset="Mammog")
+
+        elif self.dataset == "Musk":
+
+            bag = Bags(dataset="Musk")
+
+        elif self.dataset == "Optdigits":
+
+            bag = Bags(dataset="Optdigits")
+
+        elif self.dataset == "Pendigits":
+
+            bag = Bags(dataset="Pendigits")
+
+        elif self.dataset == "Satellite":
+
+            bag = Bags(dataset="Satellite")
+
+        elif self.dataset == "Shuttle":
+
+            bag = Bags(dataset="Shuttle")
+
+        elif self.dataset == "Skin":
+
+            bag = Bags(dataset="Skin")
+
+        elif self.dataset == "Pima":
+
+            bag = Bags(dataset="Pima")
+
+        elif self.dataset == "Thyroid":
+
+            bag = Bags(dataset="Thyroid")
+
+        elif self.dataset == "Vowels":
+
+            bag = Bags(dataset="Vowels")
+
+        elif self.dataset == "Wilt":
+
+            bag = Bags(dataset="Wilt")
+
         else:
-            self.bags_labels = torch.stack(pos).float()
 
-    def create_bag(self):
-
-        r'''
-        Instance method for generating bag dataset
-        '''
-
-        self.obtain_dataset()
-
-        bags_list = []
-        labels_list = []
-        self.original_label = []
-        for i in range(self.num_bag):
-
-            label = np.random.binomial(1, self.confactor, size=1)[0]
-            n_bag_length = np.int32(self.r.normal(self.mean_nbag_length, self.var_nbag_length, 1))
-            a_bag_length = np.int32(self.r.normal(self.mean_abag_length, self.var_abag_length, 1))
-
-            if label == 0:
-                bag_length = n_bag_length + a_bag_length
-
-                if bag_length < 1:
-                    bag_length = 1
-
-                indices = torch.LongTensor(self.r.randint(0, len(self.ndata.targets), bag_length))
-
-                if not torch.is_tensor(self.ndata.targets):
-                    labels_in_bag = torch.tensor(self.ndata.targets)[indices]
-                else:
-                    labels_in_bag = self.ndata.targets[indices]
-
-                self.original_label.append(labels_in_bag)
-                labels_in_bag = labels_in_bag == self.target
-                bags_list.append(self.ndata.data[indices])
-                labels_list.append(labels_in_bag)
-
-            elif label == 1:
-
-                if a_bag_length < 1:
-                    a_bag_length = 1
-
-                n_indices = torch.LongTensor(self.r.randint(0, len(self.ndata.targets), n_bag_length))
-                a_indices = torch.LongTensor(self.r.randint(0, len(self.adata.targets), a_bag_length))
-
-                if not torch.is_tensor(self.ndata.targets):
-                    labels_in_bag = torch.concat([torch.tensor(self.ndata.targets[n_indices]), torch.tensor(self.adata.targets[a_indices])])
-                else:
-                    labels_in_bag = torch.concat([self.ndata.targets[n_indices],self.adata.targets[a_indices]])
-
-                self.original_label.append(labels_in_bag)
-                labels_in_bag = labels_in_bag == self.target
-
-                if n_bag_length<1:
-                    bags_list.append(self.adata.data[a_indices])
-                else:
-                    bags_list.append(torch.concat([self.ndata.data[n_indices], self.adata.data[a_indices]]))
-
-                labels_list.append(labels_in_bag)
-
-
-        self.create_bag_label(labels_list)
-        if self.train:
-            self.pos_bag = [bags_list[item] for item in torch.where(self.bags_labels==1)[0]]
-        return bags_list, labels_list
+            raise ValueError('Dataset not support')
+        
 

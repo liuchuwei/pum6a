@@ -5,6 +5,7 @@ seed = 88888888
 epochs = 1000
 batch_size=16
 confactor='False'
+model_chosen='pum6a'
 
 [optimizer]
 

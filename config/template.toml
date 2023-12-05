@@ -1,0 +1,14 @@
+seed = 88888888
+
+
+[dataload]
+
+    dataset = "construct"
+    num_bag = 500
+    mean_nbag_length = 10
+    var_nbag_length = 2
+    mean_abag_length = 4
+    var_abag_length = 1
+    confactor = 0.3
+    n_pos = 50
+    seed = 8888888

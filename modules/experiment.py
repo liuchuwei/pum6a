@@ -4,9 +4,9 @@ import argparse
 from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
-from utils.train_utils import set_seed, Trainer
-from utils.bag_utils import Bags
-from model.model_factory import pum6a, puma, iAE
+from utils.train_utils import set_seed, ReTrainer, puIF_Trainer, RF_Trainer
+from utils.load_dataset import LoadDataset
+from model.model_factory import pum6a, puma, iAE, puIF, RF
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -33,24 +33,7 @@ def main(args):
     set_seed(config['seed'])
 
     "3.load dataset"
-    if config['dataset'] == "MNIST":
-
-        train_bag = Bags(dataset="MNIST", train=True)
-        test_bag = Bags(dataset="MNIST", train=False)
-
-    elif config['dataset'] == "construct":
-
-        train_bag = Bags(dataset="construct", train=True)
-        test_bag = Bags(dataset="construct", train=False)
-
-    elif config['dataset'] == "annthyroid":
-
-        train_bag = Bags(dataset="annthyroid", train=True)
-        test_bag = Bags(dataset="annthyroid", train=False)
-
-    else:
-
-        raise ValueError('Dataset not support')
+    bag = LoadDataset(config)
 
     "4.load model"
     # model = pum6a(config['model'])
@@ -60,11 +43,26 @@ def main(args):
         model = pum6a(config['model'])
     elif config['model_chosen']=='iAE':
         model = iAE(config['model'])
+    elif config['model_chosen']=='puIF':
+        model = puIF(config['model'])
+    elif config['model_chosen']=='RF':
+        model = RF(config['model'])
 
     "5.train model"
-    trainer = Trainer(config=config,
-                      model=model,
-                      train_bag=train_bag,
-                      test_bag=test_bag)
+    if config['model_chosen'] in ['puma', 'pum6a', 'iAE']:
+        trainer = ReTrainer(config=config,
+                          model=model,
+                          train_bag=train_bag,
+                          test_bag=test_bag)
+    elif config['model_chosen'] == "puIF":
+        trainer = puIF_Trainer(config=config,
+                          model=model,
+                          train_bag=train_bag,
+                          test_bag=test_bag)
+    elif config['model_chosen'] == "RF":
+        trainer = RF_Trainer(config=config,
+                          model=model,
+                          train_bag=train_bag,
+                          test_bag=test_bag)
 
     trainer.run()
