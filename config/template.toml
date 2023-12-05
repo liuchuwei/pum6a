@@ -3,7 +3,7 @@ seed = 88888888
 
 [dataload]
 
-    dataset = "construct"
+    dataset = "MNIST"
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2
@@ -11,4 +11,5 @@ seed = 88888888
     var_abag_length = 1
     confactor = 0.3
     n_pos = 50
+    target = 1
     seed = 8888888

@@ -5,7 +5,7 @@ from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
 from utils.train_utils import set_seed, ReTrainer, puIF_Trainer, RF_Trainer
-from utils.load_dataset import LoadDataset
+from utils.load_dataset import LoadBag
 from model.model_factory import pum6a, puma, iAE, puIF, RF
 
 def argparser():
@@ -33,7 +33,7 @@ def main(args):
     set_seed(config['seed'])
 
     "3.load dataset"
-    bag = LoadDataset(config)
+    bag = LoadBag(config)
 
     "4.load model"
     # model = pum6a(config['model'])

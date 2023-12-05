@@ -29,14 +29,16 @@ class storeDataset(object):
 
     '''
 
-    def __init__(self):
+    def __init__(self, data, target):
         r'''
-               Initialization function for the class
-
+        Initialization function for the class
+            Args:
+                  data (torch.Tensor): instance feature
+                  target (torch.Tensor): instance target
         '''
 
-        self.data = None
-        self.targets = None
+        self.X = data
+        self.y = target
 
 
 class Bags(data_utils.Dataset):
@@ -55,6 +57,7 @@ class Bags(data_utils.Dataset):
                  var_abag_length: Optional[int]=1,
                  confactor: Optional[int]=0.3,
                  n_pos: Optional[int]=50,
+                 target: Optional[int]=1,
                  seed: Optional[int]=8888888
                  ):
 
@@ -70,8 +73,8 @@ class Bags(data_utils.Dataset):
                 var_abag_length: Variance of abnormal bags length
                 confactor: Ratio of normal bags and abnormal bags
                 n_pos: Number of positive bags
+                target: Which target is defined as abnormal
                 seed: Random seed
-                train: whether the dataset is used for training model or testing model
 
             Returns:
                 None
@@ -87,6 +90,7 @@ class Bags(data_utils.Dataset):
         self.var_abag_length = var_abag_length
         self.confactor = confactor
         self.n_pos = n_pos
+        self.target = target
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)
         self.bags, self.labels = self.create_bag()
@@ -131,6 +135,12 @@ class Bags(data_utils.Dataset):
         if self.dataset == "construct":
 
             bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
 
         elif self.dataset == "MNIST":
 
@@ -239,5 +249,61 @@ class Bags(data_utils.Dataset):
         else:
 
             raise ValueError('Dataset not support')
-        
+
+    def create_bag(self):
+
+        r'''
+        Instance method for generating bag dataset
+        '''
+
+        self.obtain_dataset()
+
+        bags_list = []
+        labels_list = []
+        self.original_label = []
+
+        for i in range(self.num_bag):
+
+            label = np.random.binomial(1, self.confactor, size=1)[0]
+            n_bag_length = np.int32(self.r.normal(self.mean_nbag_length, self.var_nbag_length, 1))
+            a_bag_length = np.int32(self.r.normal(self.mean_abag_length, self.var_abag_length, 1))
+
+            if label == 0:
+                bag_length = n_bag_length + a_bag_length
+
+                if bag_length < 1:
+                    bag_length = 1
+
+                indices = torch.LongTensor(self.r.randint(0, len(self.n_inst.y), bag_length))
+
+
+                labels_in_bag = self.n_inst.y[indices]
+
+                self.original_label.append(labels_in_bag)
+                labels_in_bag = labels_in_bag == self.target
+                bags_list.append(self.n_inst.X[indices])
+                labels_list.append(labels_in_bag)
+
+            elif label == 1:
+
+                if a_bag_length < 1:
+                    a_bag_length = 1
+
+                n_indices = torch.LongTensor(self.r.randint(0, len(self.n_inst.y), n_bag_length))
+                a_indices = torch.LongTensor(self.r.randint(0, len(self.a_inst.y), a_bag_length))
+
+
+                labels_in_bag = torch.concat([self.n_inst.y[n_indices], self.a_inst.y[a_indices]])
+
+                self.original_label.append(labels_in_bag)
+                labels_in_bag = labels_in_bag == self.target
+
+                if n_bag_length < 1:
+                    bags_list.append(self.a_inst.X[a_indices])
+                else:
+                    bags_list.append(torch.concat([self.n_inst.X[n_indices], self.a_inst.X[a_indices]]))
+
+                labels_list.append(labels_in_bag)
+
+        return bags_list, labels_list
 

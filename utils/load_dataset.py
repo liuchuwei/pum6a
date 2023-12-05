@@ -1,7 +1,7 @@
 from typing import *
 from utils.bag_utils import Bags
 
-def LoadDataset(config: Dict):
+def LoadBag(config: Dict):
 
     """
     Method to load dataset and package it into bag dataset
@@ -21,6 +21,7 @@ def LoadDataset(config: Dict):
     var_abag_length = config['dataload']['var_abag_length']
     confactor = config['dataload']['confactor']
     n_pos = config['dataload']['n_pos']
+    target = config['dataload']['target']
     seed = config['dataload']['seed']
 
     bag = Bags(
@@ -32,6 +33,7 @@ def LoadDataset(config: Dict):
         var_abag_length=var_abag_length,
         confactor=confactor,
         n_pos=n_pos,
+        target=target,
         seed=seed
     )
 
