@@ -7,6 +7,9 @@ from typing import *
 from sklearn.model_selection import StratifiedKFold
 import datetime
 from utils.bag_utils import inference_collate, BagsLoader
+from torch import optim
+
+from sklearn.metrics import roc_auc_score
 
 def set_seed(seed: Optional[int] = 1):
 
@@ -60,7 +63,7 @@ def SplitBag(n_splits: Optional[int] = 5,
             break
 
         train_bag_idx.append(train)
-        val_bag_idx.append(train)
+        val_bag_idx.append(val)
 
     return train_bag_idx, val_bag_idx, test_bag_idx
 
@@ -79,14 +82,13 @@ def genSuffix(seed: Optional[int]=88888888):
     return suffix
 
 
-def build_optimizer(params, weight_decay=0.0, config):
+def BuildOptimizer(params, config=None):
 
     r"""
     instance method for building optimizer
 
         Args:
             params: model params
-            weight_decay: learning rate weight decay
             config: optimizer config
 
         Return:
@@ -94,30 +96,31 @@ def build_optimizer(params, weight_decay=0.0, config):
 
     """
     filter_fn = filter(lambda p: p.requires_grad, params)
-    if self.config['optimizer']['opt'] == 'adam':
-        optimizer = optim.Adam(filter_fn, lr=self.config['optimizer']['lr'],
-                               weight_decay=self.config['optimizer']['weight_decay'])
-    elif self.config['optimizer']['opt'] == 'AdamW':
-        optimizer = torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
-                                      weight_decay=self.config['optimizer']['weight_decay'],
-                                      amsgrad=self.config['optimizer']['amsgrad'])
-    elif self.config['optimizer']['opt'] == 'sgd':
-        optimizer = optim.SGD(filter_fn, lr=self.config['optimizer']['lr'],
-                              momentum=self.config['momentum']['weight_decay'],
-                              weight_decay=self.config['optimizer']['weight_decay'])
-    elif self.config['optimizer']['opt'] == 'rmsprop':
-        optimizer = optim.RMSprop(filter_fn, lr=self.config['optimizer']['lr'],
-                                  weight_decay=self.config['optimizer']['weight_decay'])
-    elif self.config['optimizer']['opt'] == 'adagrad':
-        optimizer = optim.Adagrad(filter_fn, lr=self.config['optimizer']['lr'],
-                                  weight_decay=self.config['optimizer']['weight_decay'])
-    if self.config['optimizer']['opt_scheduler'] == 'none':
+
+    if config['opt'] == 'adam':
+        optimizer = optim.Adam(filter_fn, lr=config['lr'],
+                               weight_decay=config['weight_decay'])
+    elif config['opt'] == 'AdamW':
+        optimizer = torch.optim.AdamW(filter_fn, lr=config['lr'],
+                                      weight_decay=config['weight_decay'],
+                                      amsgrad=config['amsgrad'])
+    elif config['opt'] == 'sgd':
+        optimizer = optim.SGD(filter_fn, lr=config['lr'],
+                              momentum=config['momentum'],
+                              weight_decay=config['weight_decay'])
+    elif config['opt'] == 'rmsprop':
+        optimizer = optim.RMSprop(filter_fn, lr=config['lr'],
+                                  weight_decay=config['weight_decay'])
+    elif config['opt'] == 'adagrad':
+        optimizer = optim.Adagrad(filter_fn, lr=config['lr'],
+                                  weight_decay=config['weight_decay'])
+    if config['opt_scheduler'] == 'none':
         return None, optimizer
-    elif self.config['optimizer']['opt_scheduler'] == 'step':
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['optimizer']['opt_decay_step'],
-                                              gamma=self.config['optimizer']['opt_decay_rate'])
-    elif self.config['optimizer']['opt_scheduler'] == 'cos':
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['optimizer']['opt_restart'])
+    elif config['opt_scheduler'] == 'step':
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config['opt_decay_step'],
+                                              gamma=config['opt_decay_rate'])
+    elif config['opt_scheduler'] == 'cos':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config['opt_restart'])
 
     return scheduler, optimizer
 
@@ -202,9 +205,9 @@ class adanTrainer(object):
                 none
         """
 
-        nonpos_idx = torch.where(self.train_bag.bags_labels == 0)[0].to(self.device)
-        sorted_idx = torch.argsort(bag_scores[nonpos_idx], dim=0)[:self.train_bag.n_pos]
-        self.y_tmp = torch.clone(self.train_bag.bags_labels).to(self.device)
+        nonpos_idx = torch.where(self.train_bag_label == 0)[0].to(self.device)
+        sorted_idx = torch.argsort(bag_scores[nonpos_idx], dim=0)[:self.config['n_pos']]
+        self.y_tmp = torch.clone(self.train_bag_label).to(self.device)
         self.y_tmp[nonpos_idx[sorted_idx]] = -1
 
     def train_epoch(self):
@@ -212,6 +215,7 @@ class adanTrainer(object):
         Instance method for taining one epoch
         """
 
+        size=len(self.train_bag)
         self.model.train()
         bag_scores = torch.zeros([len(self.train_bag), 1]).to(self.device).float()
 
@@ -233,20 +237,45 @@ class adanTrainer(object):
 
             if batch % 5 == 0:
                 loss, current = loss.item(), (batch + 1) * self.config['batch_size']
-                print(f"likehood_loss_p: {loss2:>7f}  "
+                print(f"likehood_loss_p: {loss:>7f}  "
                       f"[{current:>5d}/{size:>5d}]")
 
-        self.refreshNegLabel()
+        self.refreshNegLabel(bag_scores)
 
     def val_epoch(self):
         r"""
-        Instance method for taining one epoch
+        Instance method for validate one epoch
+
+        Return:
+            bag_loss: likelihood loss of validation dataset
         """
-        pass
+        self.model.eval()
+        bag_loss = self.model.validation(self.val_bag, self.val_bag_label.to(self.device))
+
+        return bag_loss
+
+    def tesing(self):
+        r"""
+        Instance method for testing
+
+        Return:
+            bag_auc: auc score of bag
+            ins_auc: auc score of instance
+        """
+
+        self.model.eval()
+        bag_pro, ins_pro = self.model.decision(self.test_bag)
+        bag_y = torch.stack([item.max() for item in self.test_bag_label]).float()
+        ins_y = torch.concat([item.squeeze() for item in self.test_bag_label]).float()
+
+        bag_auc = roc_auc_score(bag_y, bag_y.cpu().detach().numpy())
+        ins_auc = roc_auc_score(ins_y, ins_pro.cpu().detach().numpy())
+
+        return bag_auc, ins_auc
 
     def run(self):
 
-        "1. Split dataset: 5-fold-cross-validataion"
+        "1. Split dataset: 5-fold-cross-validation"
         self.train_idx, self.val_idx, self.test_idx = SplitBag(n_splits=self.n_splits,
                                                                num_bag=self.bag.num_bag,
                                                                bag_labels=self.bag.labels)
@@ -284,10 +313,29 @@ class adanTrainer(object):
             self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
             self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
 
+            self.scheduler, self.optimizer = BuildOptimizer(params=self.model.parameters(),
+                                            config=self.config['optimizer'])
 
+            best = 88888888
             for t in range(self.config['epochs']):
+
                 print(f"Epoch {t + 1}\n-------------------------------")
                 self.train_epoch()
-                self.val_epoch()
+                cost = self.val_epoch()
+                print(f"val_bag_loss: {(cost):>0.1f}")
 
-            self.test()
+                if cost < best:
+                    best = cost
+                    patience = 0
+                else:
+                    patience += 1
+
+                # if patience == self.config['early_stopping']:
+                #     break
+                bag_auc, ins_auc = self.tesing()
+
+                print(f"bag_auc: {(100 * bag_auc):>0.1f}%, "
+                      f"ins_auc: {(100 * ins_auc):>0.1f}%")
+
+            print("Done!")
+

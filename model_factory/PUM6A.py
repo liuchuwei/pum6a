@@ -1,5 +1,6 @@
 from model_factory.factory import *
 import torch.nn.functional as F
+import torch
 
 class pum6a(nn.Module):
 
@@ -205,3 +206,39 @@ class pum6a(nn.Module):
             loss = 0.01*(self.A**2+self.B**2)[0]
 
         return loss, data_inst
+
+    def validation(self, bag, bag_label):
+
+        """
+        instance method to get bag probability and likihood loss
+
+            Args:
+                bag (list): bag dataset
+                bag_label (list): bag label
+            Return:
+                bag_loss (torch.Tensor): bag likelihood loss
+        """
+
+        data_inst = [self.Attforward(item.to(self.device)) for item in bag]
+        bag_pro = torch.concat([item[0] for item in data_inst]).to(self.device)
+        bag_loss = torch.sum(-1. * (bag_label * torch.log(bag_pro) + (1. - bag_label) * torch.log(1. - bag_pro)))
+
+        return bag_loss
+
+    def decision(self, bag):
+
+        """
+        instance method to get bag probability and instance probability
+
+            Args:
+                bag (list): bag dataset
+            Return:
+                bag_pro (torch.Tensor): tensor representation of bag probability
+                ins_pro (torch.Tensor): tensor representation of instance probability
+        """
+
+        data_inst = [self.Attforward(item.to(self.device)) for item in bag]
+        bag_pro = torch.concat([item[0] for item in data_inst]).to(self.device)
+        ins_pro = torch.concat([item[1].squeeze() for item in data_inst]).to(self.device)
+
+        return bag_pro, ins_pro

@@ -55,9 +55,10 @@ seed = 88888888
     save_dir = 'result/Annthyroid'
     seed = 8888888
 
-    epochs = 300
+    epochs = 100
     batch_size = 16
     n_pos = 80  # 400/80*100%=5%
+    early_stopping = 3
 
     [trainer.optimizer]
 
