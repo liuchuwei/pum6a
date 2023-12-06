@@ -7,7 +7,7 @@ from sklearn.ensemble import IsolationForest
 class RF(object):
 
     r"""
-    The RF model.
+    The RF model_factory.
 
     """
     def __init__(self, model_config: Dict):
@@ -15,7 +15,7 @@ class RF(object):
                 Initialization function for the class
 
                     Args:
-                            model_config (Dict): A dictionary containing model configurations.
+                            model_config (Dict): A dictionary containing model_factory configurations.
 
                     Returns:
                             None
@@ -60,7 +60,7 @@ class RF(object):
 
 class puIF(torch.nn.Module):
     r"""
-    The puIF model.
+    The puIF model_factory.
 
     """
     def __init__(self, model_config: Dict):
@@ -68,7 +68,7 @@ class puIF(torch.nn.Module):
                 Initialization function for the class
 
                     Args:
-                            model_config (Dict): A dictionary containing model configurations.
+                            model_config (Dict): A dictionary containing model_factory configurations.
 
                     Returns:
                             None
@@ -163,7 +163,7 @@ class puIF(torch.nn.Module):
 
     def build_model(self):
 
-        "1. build isolation forest model"
+        "1. build isolation forest model_factory"
         self.clf = IsolationForest(contamination=0.25, random_state=888)
 
         "2. build classifer"
@@ -176,7 +176,7 @@ class puIF(torch.nn.Module):
 class iAE(nn.Module):
 
     r"""
-    The iAE model.
+    The iAE model_factory.
 
     """
     def __init__(self, model_config: Dict):
@@ -185,7 +185,7 @@ class iAE(nn.Module):
         Initialization function for the class
 
             Args:
-                    model_config (Dict): A dictionary containing model configurations.
+                    model_config (Dict): A dictionary containing model_factory configurations.
 
             Returns:
                     None
@@ -358,7 +358,7 @@ class iAE(nn.Module):
     def build_model(self):
 
         r'''
-        Instance method for building pum6a model according to config
+        Instance method for building pum6a model_factory according to config
         '''
 
         self.confactor = self.model_config['confactor']
@@ -429,7 +429,7 @@ class iAE(nn.Module):
                        input (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
                        Tensor representation of bag, bag_labels, and number of instance
                Returns:
-                       loss (torch.Tensor): A tensor representation of model loss
+                       loss (torch.Tensor): A tensor representation of model_factory loss
 
        '''
 
@@ -482,7 +482,7 @@ class iAE(nn.Module):
 class pum6a(nn.Module):
 
     r"""
-    The positive and unlabeled multi-instance model.
+    The positive and unlabeled multi-instance model_factory.
 
     """
     def __init__(self, model_config: Dict):
@@ -491,7 +491,7 @@ class pum6a(nn.Module):
         Initialization function for the class
 
             Args:
-                    model_config (Dict): A dictionary containing model configurations.
+                    model_config (Dict): A dictionary containing model_factory configurations.
 
             Returns:
                     None
@@ -758,7 +758,7 @@ class pum6a(nn.Module):
     def build_model(self):
 
         r'''
-        Instance method for building pum6a model according to config
+        Instance method for building pum6a model_factory according to config
         '''
 
         self.L = self.model_config['attention']['L']
@@ -876,7 +876,7 @@ class pum6a(nn.Module):
                        input (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
                        Tensor representation of bag, bag_labels, and number of instance
                Returns:
-                       loss (torch.Tensor): A tensor representation of model loss
+                       loss (torch.Tensor): A tensor representation of model_factory loss
 
        '''
 
@@ -921,7 +921,7 @@ class pum6a(nn.Module):
 class puma(nn.Module):
 
     r"""
-    The positive and unlabeled multi-instance model.
+    The positive and unlabeled multi-instance model_factory.
 
     """
     def __init__(self, model_config: Dict):
@@ -930,7 +930,7 @@ class puma(nn.Module):
         Initialization function for the class
 
             Args:
-                    model_config (Dict): A dictionary containing model configurations.
+                    model_config (Dict): A dictionary containing model_factory configurations.
 
             Returns:
                     None
@@ -1098,7 +1098,7 @@ class puma(nn.Module):
     def build_model(self):
 
         r'''
-        Instance method for building pum6a model according to config
+        Instance method for building pum6a model_factory according to config
         '''
 
         self.confactor = self.model_config['confactor']
@@ -1193,7 +1193,7 @@ class puma(nn.Module):
                        input (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
                        Tensor representation of bag, bag_labels, and number of instance
                Returns:
-                       loss (torch.Tensor): A tensor representation of model loss
+                       loss (torch.Tensor): A tensor representation of model_factory loss
 
        '''
 

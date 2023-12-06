@@ -11,5 +11,5 @@ seed = 88888888
     var_abag_length = 1
     confactor = 0.3
     n_pos = 50
-    target = -1
+    target = 1
     seed = 8888888

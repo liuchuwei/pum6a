@@ -26,7 +26,7 @@ def set_seed(seed: Optional[int] = 1):
 class RF_Trainer(object):
 
     """
-    An object class for puIF model training
+    An object class for puIF model_factory training
     """
 
     def __init__(self,
@@ -40,8 +40,8 @@ class RF_Trainer(object):
             Args:
                     config (Dict): A dictionary containing training configurations.
                     model: Model to train
-                    train_bag: Bag dataset for model training
-                    test_bag: Bag dataset for model testing
+                    train_bag: Bag dataset for model_factory training
+                    test_bag: Bag dataset for model_factory testing
 
             Returns:
                     None
@@ -53,7 +53,7 @@ class RF_Trainer(object):
         self.test_bag = test_bag
 
     def run(self):
-        '1.Build random forest model'
+        '1.Build random forest model_factory'
         X = torch.concat(self.train_bag.bags)
         label_len = [len(item) for item in self.train_bag.bags]
         Y = []
@@ -89,7 +89,7 @@ class RF_Trainer(object):
 class puIF_Trainer(object):
 
     """
-    An object class for puIF model training
+    An object class for puIF model_factory training
     """
 
     def __init__(self,
@@ -103,8 +103,8 @@ class puIF_Trainer(object):
             Args:
                     config (Dict): A dictionary containing training configurations.
                     model: Model to train
-                    train_bag: Bag dataset for model training
-                    test_bag: Bag dataset for model testing
+                    train_bag: Bag dataset for model_factory training
+                    test_bag: Bag dataset for model_factory testing
 
             Returns:
                     None
@@ -122,7 +122,7 @@ class puIF_Trainer(object):
         instance method for building optimizer
 
             Args:
-                params: model params
+                params: model_factory params
                 weight_decay: learning rate weight decay
 
             Return:
@@ -159,7 +159,7 @@ class puIF_Trainer(object):
 
     def run(self):
 
-        "1.Train isolation model"
+        "1.Train isolation model_factory"
         X = torch.concat(self.train_bag.bags)
         self.model.clf.fit(X)
 
@@ -206,7 +206,7 @@ class puIF_Trainer(object):
 class ReTrainer(object):
 
     """
-    An object class for model training with self-adaptive process to select most reliable negative bags
+    An object class for model_factory training with self-adaptive process to select most reliable negative bags
     """
 
     def __init__(self,
@@ -220,8 +220,8 @@ class ReTrainer(object):
             Args:
                     config (Dict): A dictionary containing training configurations.
                     model: Model to train
-                    train_bag: Bag dataset for model training
-                    test_bag: Bag dataset for model testing
+                    train_bag: Bag dataset for model_factory training
+                    test_bag: Bag dataset for model_factory testing
 
             Returns:
                     None
@@ -282,7 +282,7 @@ class ReTrainer(object):
         instance method for building optimizer
 
             Args:
-                params: model params
+                params: model_factory params
                 weight_decay: learning rate weight decay
 
             Return:
@@ -391,8 +391,8 @@ class ReTrainer(object):
 
         self.refreshNegLabel(bag_scores)
 
-        # self.model.eval()
-        # data_inst = [self.model.Attforward(item.to(self.device)) for item in self.train_bag.pos_bag]
+        # self.model_factory.eval()
+        # data_inst = [self.model_factory.Attforward(item.to(self.device)) for item in self.train_bag.pos_bag]
         # att = [item[1] for item in data_inst]
         # neg_bag = []
         #
@@ -401,7 +401,7 @@ class ReTrainer(object):
         #     if 0 < torch.sum(item >= 0.3) < len(item[0]):
         #         neg_bag.append(self.train_bag.pos_bag[idx].to(self.device)[(item < 0.2).squeeze()])
         #
-        # self.model.pesu_bag = neg_bag
+        # self.model_factory.pesu_bag = neg_bag
 
     def _process_decision_scores(self, threshold_: Optional[float] = 0.5, data_inst=None, bag_idx=None):
 

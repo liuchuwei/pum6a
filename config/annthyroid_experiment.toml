@@ -37,7 +37,7 @@ confactor='False'
 
 
     [model.attention]
-    L=8  # Attention model input nodes
-    D=4  # Attention model intermediate nodes
-    K=1  # Attention model output nodes
+    L=8  # Attention model_factory input nodes
+    D=4  # Attention model_factory intermediate nodes
+    K=1  # Attention model_factory output nodes
 

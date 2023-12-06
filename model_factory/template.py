@@ -7,7 +7,7 @@ from utils.ssim_metircs import ssim
 class puma(nn.Module):
 
     r"""
-    The puma model, attention mechanism was used for transforming instance probabilities into bag probability
+    The puma model_factory, attention mechanism was used for transforming instance probabilities into bag probability
     """
 
     def __init__(self, model_config: Dict):
@@ -16,7 +16,7 @@ class puma(nn.Module):
         Initialization function for the class
 
             Args:
-                    model_config (Dict): A dictionary containing model configurations.
+                    model_config (Dict): A dictionary containing model_factory configurations.
 
             Returns:
                     None
@@ -33,7 +33,7 @@ class puma(nn.Module):
 class Net(nn.Module):
 
     r"""
-    The logistic model, use for instance probability inference
+    The logistic model_factory, use for instance probability inference
     """
     def __init__(self):
 
@@ -58,7 +58,7 @@ class Net(nn.Module):
 class template(nn.Module):
 
     r"""
-    The milpuAttention model, attention mechanism was used for transforming instance probabilities into bag probability
+    The milpuAttention model_factory, attention mechanism was used for transforming instance probabilities into bag probability
     """
 
     def __init__(self, model_config: Dict):
@@ -67,7 +67,7 @@ class template(nn.Module):
         Initialization function for the class
 
             Args:
-                    model_config (Dict): A dictionary containing model configurations.
+                    model_config (Dict): A dictionary containing model_factory configurations.
 
             Returns:
                     None
@@ -106,7 +106,7 @@ class template(nn.Module):
     def build_model(self):
 
         r'''
-        Instance method for building milpuAttention model according to config
+        Instance method for building milpuAttention model_factory according to config
 
         '''
 
@@ -291,7 +291,7 @@ class template(nn.Module):
                        input (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor):
                        Tensor representation of bag, bag_labels, and number of instance
                Returns:
-                       loss (torch.Tensor): A tensor representation of model loss
+                       loss (torch.Tensor): A tensor representation of model_factory loss
 
        '''
 

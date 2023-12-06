@@ -28,7 +28,7 @@ model_chosen='pum6a'
     linear_input = 800 # 50 * 4 * 4
 
     [model.attention]
-    L=500  # Attention model input nodes
-    D=128  # Attention model intermediate nodes
-    K=1    # Attention model output nodes
+    L=500  # Attention model_factory input nodes
+    D=128  # Attention model_factory intermediate nodes
+    K=1    # Attention model_factory output nodes
 

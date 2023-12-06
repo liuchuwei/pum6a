@@ -6,7 +6,8 @@ from argparse import ArgumentDefaultsHelpFormatter
 import toml
 from utils.train_utils import set_seed, ReTrainer, puIF_Trainer, RF_Trainer
 from utils.load_dataset import LoadBag
-from model.model_factory import pum6a, puma, iAE, puIF, RF
+from utils.model_utils import LoadModel
+from model_factory.model_factory import pum6a, puma, iAE, puIF, RF
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -35,20 +36,10 @@ def main(args):
     "3.load dataset"
     bag = LoadBag(config)
 
-    "4.load model"
-    # model = pum6a(config['model'])
-    if config['model_chosen']=='puma':
-        model = puma(config['model'])
-    elif config['model_chosen']=='pum6a':
-        model = pum6a(config['model'])
-    elif config['model_chosen']=='iAE':
-        model = iAE(config['model'])
-    elif config['model_chosen']=='puIF':
-        model = puIF(config['model'])
-    elif config['model_chosen']=='RF':
-        model = RF(config['model'])
+    "4.load model_factory"
+    model = LoadModel(config)
 
-    "5.train model"
+    "5.train model_factory"
     if config['model_chosen'] in ['puma', 'pum6a', 'iAE']:
         trainer = ReTrainer(config=config,
                           model=model,
