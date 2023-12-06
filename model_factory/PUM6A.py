@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from typing import *
+from model_factory.factory import *
 
 class pum6a(nn.Module):
 
