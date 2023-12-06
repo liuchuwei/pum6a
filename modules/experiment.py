@@ -34,10 +34,10 @@ def main(args):
     set_seed(config['seed'])
 
     "3.load dataset"
-    bag = LoadBag(config)
+    bag = LoadBag(config['dataload'])
 
     "4.load model_factory"
-    model = LoadModel(config)
+    model = LoadModel(config['model'])
 
     "5.train model_factory"
     if config['model_chosen'] in ['puma', 'pum6a', 'iAE']:

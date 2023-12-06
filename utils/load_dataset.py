@@ -13,16 +13,16 @@ def LoadBag(config: Dict):
             bag: A bag object containing bag dataset
     """
 
-    dataset = config['dataload']['dataset']
-    num_bag = config['dataload']['num_bag']
-    mean_nbag_length = config['dataload']['mean_nbag_length']
-    var_nbag_length = config['dataload']['var_nbag_length']
-    mean_abag_length = config['dataload']['mean_abag_length']
-    var_abag_length = config['dataload']['var_abag_length']
-    confactor = config['dataload']['confactor']
-    n_pos = config['dataload']['n_pos']
-    target = config['dataload']['target']
-    seed = config['dataload']['seed']
+    dataset = config['dataset']
+    num_bag = config['num_bag']
+    mean_nbag_length = config['mean_nbag_length']
+    var_nbag_length = config['var_nbag_length']
+    mean_abag_length = config['mean_abag_length']
+    var_abag_length = config['var_abag_length']
+    confactor = config['confactor']
+    n_pos = config['n_pos']
+    target = config['target']
+    seed = config['seed']
 
     bag = Bags(
         dataset=dataset,

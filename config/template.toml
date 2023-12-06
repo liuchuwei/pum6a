@@ -13,3 +13,9 @@ seed = 88888888
     n_pos = 50
     target = 1
     seed = 8888888
+
+
+[model]
+
+    model_chosen = 'pum6a'
+    device = 'cuda'

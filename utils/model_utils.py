@@ -1,3 +1,5 @@
+from model_factory.PUM6A import pum6a
+
 def LoadModel(config):
 
     """
@@ -11,16 +13,16 @@ def LoadModel(config):
     """
 
     if config['model_chosen']=='pum6a':
-        model = pum6a(config['model_factory'])
+        model = pum6a(config)
 
     elif config['model_chosen']=='puma':
-        model = puma(config['model_factory'])
+        pass
 
     elif config['model_chosen']=='iAE':
-        model = iAE(config['model_factory'])
+        pass
 
     elif config['model_chosen']=='puIF':
-        model = puIF(config['model_factory'])
-        
+        pass
+
     elif config['model_chosen']=='RF':
-        model = RF(config['model_factory'])
+        pass
