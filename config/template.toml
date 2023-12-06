@@ -19,3 +19,17 @@ seed = 88888888
 
     model_chosen = 'pum6a'
     device = 'cuda'
+
+    [model.feature_extractor]
+    type = 'conv'
+    kernal_size = 5
+    pool_kernal_size = 2
+    pool_stride = 2
+    hidden_neurons = [20, 50]
+    hidden_activation = 'relu'
+    linear_input = 800 # 50 * 4 * 4
+
+    [model.attention]
+    L=500  # Attention model_factory input nodes
+    D=128  # Attention model_factory intermediate nodes
+    K=1    # Attention model_factory output nodes

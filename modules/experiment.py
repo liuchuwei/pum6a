@@ -7,7 +7,6 @@ import toml
 from utils.train_utils import set_seed, ReTrainer, puIF_Trainer, RF_Trainer
 from utils.load_dataset import LoadBag
 from utils.model_utils import LoadModel
-from model_factory.factory import pum6a, puma, iAE, puIF, RF
 
 def argparser():
     parser = argparse.ArgumentParser(

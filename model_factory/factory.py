@@ -2,6 +2,135 @@ from typing import *
 import torch
 import torch.nn as nn
 
+
+def GetActivation(name):
+    r'''
+    Instance method for building activation function
+
+        Args:
+            name (str): activation name. possible value: relu、sigmoid、 tanh
+
+        Return:
+            none
+    '''
+
+    activations = {
+        'relu': torch.nn.ReLU(),
+        'sigmoid': torch.nn.Sigmoid(),
+        'tanh': torch.nn.Tanh(),
+        'softmax': torch.nn.Softmax(),
+    }
+
+    if name in activations.keys():
+        return activations[name]
+
+    else:
+        raise ValueError(name, "is not a valid activation function")
+
+
+
+def build_attention(L: Optional[int]=500,
+                    D: Optional[int]=128,
+                    K: Optional[int]=1):
+
+    r'''
+    Instance method for building attention module according
+
+        Args:
+            L (int):  attention module input nodes
+            D (int):  attention module intermediate nodes
+            K (int):  attention module output nodes
+
+        Return:
+            attention (torch.nn.Sequential): attention module
+    '''
+
+    attention = nn.Sequential(
+        nn.Linear(L, D),
+        nn.Tanh(),
+        nn.Linear(D, K)
+    )
+
+    return attention
+
+def build_classifier(input: Optional[int]=500):
+
+    r'''
+    Instance method for building classifier module according
+
+        Args:
+            input (int):  attention module input nodes
+
+        Return:
+            classifier (torch.nn.Sequential): classifier module
+    '''
+
+
+    classifier = nn.Sequential(
+        nn.Linear(input, 1),
+        nn.Sigmoid()
+    )
+
+    return classifier
+
+
+def build_logistic():
+
+    '''
+
+    Instance method for building logistic module
+
+        Return:
+            A (torch.nn.Parameter): weight parameter of logistic module
+            B (torch.nn.Parameter): bias parameter of logistic module
+
+    '''
+
+    A = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
+    A.grad = torch.tensor(torch.rand(1))
+    B = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
+
+    return A, B
+
+def weightnoisyor(pij: Optional[list] = None,
+                  device: Optional[str] = 'cuda',
+                  mu1: Optional[int] = 0,
+                  mu2: Optional[int] = 1,
+                  sigma1: Optional[int] = 0.1,
+                  sigma2: Optional[int] = 0.1,
+                  ):
+
+    """
+    instance method to calculate bag probability based on instance probability
+
+        Args:
+            pij (torch.Tensor): Tensor representation of instance probability
+            device (str): Whether to use gpu for calculation
+            mu1 (int): loc of torch normal distributions
+            mu2 (int): loc of torch normal distributions
+            sigma1 (int): scale of torch normal distributions
+            sigma1 (int): scale of torch normal distributions
+        Return:
+
+    """
+
+    rv1 = torch.distributions.normal.Normal(loc=torch.tensor(mu1), scale=torch.tensor(sigma1))
+    rv2 = torch.distributions.normal.Normal(loc=torch.tensor(mu2), scale=torch.tensor(sigma2))
+    nbags = 1
+    ninstances = pij.size()[0]
+    pij = pij.reshape(nbags, ninstances)
+    ranks = torch.empty((nbags, ninstances), dtype=torch.float)
+    tmp = torch.argsort(pij, dim=1, descending=False)
+    for i in range(nbags):
+        ranks[i,tmp[i,:]] = torch.arange(0,ninstances)/(ninstances-1)
+    w = torch.exp(rv1.log_prob(ranks))+torch.exp(rv2.log_prob(ranks))
+    w = torch.div(w,torch.sum(w, dim=1).reshape(nbags,1))
+    pij = pij.to(device, non_blocking = True).float()
+    w = w.to(device, non_blocking = True).float()
+    noisyor = 1 - torch.prod(torch.pow(1-pij+1e-10,w).clip(min=0, max=1), dim=1)
+
+    return noisyor
+
 class FeatureExtractor(object):
 
     r"""
@@ -21,7 +150,7 @@ class FeatureExtractor(object):
         """
 
         self.model_config = model_config
-
+        self.build_FE()
 
     def build_linearFE(self):
 
@@ -39,7 +168,7 @@ class FeatureExtractor(object):
                 self.feature_extractor.add_module("batch_norm" + str(idx), torch.nn.BatchNorm1d(self.layers_neurons_[idx]))
             self.feature_extractor.add_module("linear" + str(idx),
                                     torch.nn.Linear(self.layers_neurons_[idx], self.layers_neurons_[idx + 1]))
-            self.feature_extractor.add_module(self.hidden_activation + str(idx), self.get_activation_by_name(self.hidden_activation))
+            self.feature_extractor.add_module(self.hidden_activation + str(idx), GetActivation(self.hidden_activation))
             self.feature_extractor.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
 
     def build_convFE(self):
@@ -62,15 +191,15 @@ class FeatureExtractor(object):
 
             self.feature_extractor_1.add_module("conv" + str(idx),
                 nn.Conv2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1], kernel_size=self.kernal_size))
-            self.feature_extractor_1.add_module("hidden_activation" + str(idx), self.get_activation_by_name(self.hidden_activation))
+            self.feature_extractor_1.add_module("hidden_activation" + str(idx), GetActivation(self.hidden_activation))
             self.feature_extractor_1.add_module("pool" + str(idx),
                                     nn.MaxPool2d(self.pool_kernal_size, stride=self.pool_stride))
 
-
+        self.L = self.model_config['attention']['L']
         self.linear_input = self.model_config['feature_extractor']['linear_input']
         self.feature_extractor_2.add_module("linear",
                                             torch.nn.Linear(self.linear_input, self.L))
-        self.feature_extractor_2.add_module("hidden_activation", self.get_activation_by_name(self.hidden_activation))
+        self.feature_extractor_2.add_module("hidden_activation", GetActivation(self.hidden_activation))
 
     def build_FE(self):
 
