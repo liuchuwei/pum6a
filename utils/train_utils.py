@@ -78,6 +78,49 @@ def genSuffix(seed: Optional[int]=88888888):
 
     return suffix
 
+
+def build_optimizer(params, weight_decay=0.0, config):
+
+    r"""
+    instance method for building optimizer
+
+        Args:
+            params: model params
+            weight_decay: learning rate weight decay
+            config: optimizer config
+
+        Return:
+            none
+
+    """
+    filter_fn = filter(lambda p: p.requires_grad, params)
+    if self.config['optimizer']['opt'] == 'adam':
+        optimizer = optim.Adam(filter_fn, lr=self.config['optimizer']['lr'],
+                               weight_decay=self.config['optimizer']['weight_decay'])
+    elif self.config['optimizer']['opt'] == 'AdamW':
+        optimizer = torch.optim.AdamW(filter_fn, lr=self.config['optimizer']['lr'],
+                                      weight_decay=self.config['optimizer']['weight_decay'],
+                                      amsgrad=self.config['optimizer']['amsgrad'])
+    elif self.config['optimizer']['opt'] == 'sgd':
+        optimizer = optim.SGD(filter_fn, lr=self.config['optimizer']['lr'],
+                              momentum=self.config['momentum']['weight_decay'],
+                              weight_decay=self.config['optimizer']['weight_decay'])
+    elif self.config['optimizer']['opt'] == 'rmsprop':
+        optimizer = optim.RMSprop(filter_fn, lr=self.config['optimizer']['lr'],
+                                  weight_decay=self.config['optimizer']['weight_decay'])
+    elif self.config['optimizer']['opt'] == 'adagrad':
+        optimizer = optim.Adagrad(filter_fn, lr=self.config['optimizer']['lr'],
+                                  weight_decay=self.config['optimizer']['weight_decay'])
+    if self.config['optimizer']['opt_scheduler'] == 'none':
+        return None, optimizer
+    elif self.config['optimizer']['opt_scheduler'] == 'step':
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.config['optimizer']['opt_decay_step'],
+                                              gamma=self.config['optimizer']['opt_decay_rate'])
+    elif self.config['optimizer']['opt_scheduler'] == 'cos':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.config['optimizer']['opt_restart'])
+
+    return scheduler, optimizer
+
 class adanTrainer(object):
 
     """
@@ -142,7 +185,7 @@ class adanTrainer(object):
 
         y_tmp = torch.clone(self.train_bag_label)
         neg_idx = torch.where(y_tmp == 0)[0]
-        n_neg = torch.sum(y_tmp)
+        n_neg = torch.sum(y_tmp).int()
         y_tmp[neg_idx[torch.randperm(neg_idx.size(0))[:n_neg]]] = -1
 
         self.y_tmp = y_tmp.to(self.device)
@@ -181,9 +224,7 @@ class adanTrainer(object):
             bag_labels = self.y_tmp[bag_idx]
             bag_labels = bag_labels.to(self.device)
 
-            loss2, data_inst = self.model.bag_forward((bag, bag_labels, n_instance))
-            data_inst = data_inst[:len(bag)]
-            loss = loss2
+            loss, data_inst = self.model.bag_forward((bag, bag_labels, n_instance))
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -225,14 +266,24 @@ class adanTrainer(object):
                                                   batch_size=self.config['batch_size'],
                                                   shuffle=True,
                                                   collate_fn=inference_collate)
-            self.train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
-            self.val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
+
+            train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
+            val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
+            total_label = torch.concat([train_bag_label, val_bag_label])
+            n_pos = self.config['n_pos']
+            pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
+            s = torch.zeros(len(total_label))
+            s[pos_idx] = 1
+
+            self.train_bag_label = s[:len(train_bag_label)]
+            self.val_bag_label = s[len(train_bag_label):]
 
             self.initNegLabel()
 
 
             self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
             self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
+
 
             for t in range(self.config['epochs']):
                 print(f"Epoch {t + 1}\n-------------------------------")

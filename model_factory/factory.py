@@ -74,11 +74,14 @@ def build_classifier(input: Optional[int]=500):
     return classifier
 
 
-def build_logistic():
+def build_logistic(device: Optional[str]='cuda'):
 
     '''
 
     Instance method for building logistic module
+
+        Args:
+            device (str): whether to use cuda for calculation
 
         Return:
             A (torch.nn.Parameter): weight parameter of logistic module
@@ -86,9 +89,9 @@ def build_logistic():
 
     '''
 
-    A = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
-    A.grad = torch.tensor(torch.rand(1))
-    B = torch.nn.Parameter(torch.tensor(torch.rand(1)), requires_grad=True)
+    A = torch.nn.Parameter(torch.tensor(torch.rand(1, device=device)), requires_grad=True)
+    A.grad = torch.tensor(torch.rand(1, device=device))
+    B = torch.nn.Parameter(torch.tensor(torch.rand(1, device=device)), requires_grad=True)
 
     return A, B
 
@@ -111,13 +114,13 @@ def weightnoisyor(pij: Optional[list] = None,
             sigma1 (int): scale of torch normal distributions
             sigma1 (int): scale of torch normal distributions
         Return:
-
+            noisyor (torch.Tensor): Tensor representation of bag probability
     """
 
     rv1 = torch.distributions.normal.Normal(loc=torch.tensor(mu1), scale=torch.tensor(sigma1))
     rv2 = torch.distributions.normal.Normal(loc=torch.tensor(mu2), scale=torch.tensor(sigma2))
     nbags = 1
-    ninstances = pij.size()[0]
+    ninstances = pij.size()[1]
     pij = pij.reshape(nbags, ninstances)
     ranks = torch.empty((nbags, ninstances), dtype=torch.float)
     tmp = torch.argsort(pij, dim=1, descending=False)

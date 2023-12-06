@@ -19,18 +19,31 @@ seed = 88888888
     model_chosen = 'pum6a'
     device = 'cuda'
 
+#    [model.feature_extractor]
+#    type = 'conv'
+#    kernal_size = 5
+#    pool_kernal_size = 2
+#    pool_stride = 2
+#    hidden_neurons = [20, 50]
+#    hidden_activation = 'relu'
+#    linear_input = 800 # 50 * 4 * 4
+
     [model.feature_extractor]
-    type = 'conv'
-    kernal_size = 5
-    pool_kernal_size = 2
-    pool_stride = 2
-    hidden_neurons = [20, 50]
+    type = 'linear'
+    n_features = 6
+    dropout_rate = 0
+    hidden_neurons = [12, 24]
+    batch_norm = 'True'
     hidden_activation = 'relu'
-    linear_input = 800 # 50 * 4 * 4
+
+#    [model.attention]
+#    L=500  # Attention model_factory input nodes
+#    D=128  # Attention model_factory intermediate nodes
+#    K=1    # Attention model_factory output nodes
 
     [model.attention]
-    L=500  # Attention model_factory input nodes
-    D=128  # Attention model_factory intermediate nodes
+    L=24  # Attention model_factory input nodes
+    D=6  # Attention model_factory intermediate nodes
     K=1    # Attention model_factory output nodes
 
 
@@ -44,5 +57,13 @@ seed = 88888888
 
     epochs = 300
     batch_size = 16
-    n_pos = 60
+    n_pos = 80  # 400/80*100%=5%
+
+    [trainer.optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0005
+    weight_decay=1e-05
+    amsgrad='True'
+    opt_scheduler='none'
 

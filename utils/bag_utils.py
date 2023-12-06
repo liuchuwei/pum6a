@@ -80,7 +80,6 @@ class Bags(object):
                  mean_abag_length: Optional[int]=4,
                  var_abag_length: Optional[int]=1,
                  confactor: Optional[int]=0.3,
-                 n_pos: Optional[int]=50,
                  target: Optional[int]=1,
                  seed: Optional[int]=8888888
                  ):
@@ -96,7 +95,6 @@ class Bags(object):
                 mean_abag_length: Mean of abnormal bags length
                 var_abag_length: Variance of abnormal bags length
                 confactor: Ratio of normal bags and abnormal bags
-                n_pos: Number of positive bags
                 target: Which target is defined as abnormal
                 seed: Random seed
 
@@ -113,7 +111,6 @@ class Bags(object):
         self.mean_abag_length = mean_abag_length
         self.var_abag_length = var_abag_length
         self.confactor = confactor
-        self.n_pos = n_pos
         self.target = target
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)

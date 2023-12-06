@@ -39,9 +39,15 @@ class pum6a(nn.Module):
         '''
 
         FE = FeatureExtractor(self.model_config)
-        self.feature_extractor_1 = FE.feature_extractor_1
-        self.feature_extractor_2 = FE.feature_extractor_2
+        if self.model_config['feature_extractor']['type']=='conv':
 
+            self.feature_extractor_1 = FE.feature_extractor_1.to(self.device)
+            self.feature_extractor_2 = FE.feature_extractor_2.to(self.device)
+
+        elif self.model_config['feature_extractor']['type']=='linear':
+            self.feature_extractor = FE.feature_extractor.to(self.device)
+
+        self.FE_type = self.model_config['feature_extractor']['type']
 
     def build_attention(self):
 
@@ -54,7 +60,7 @@ class pum6a(nn.Module):
             L=self.model_config['attention']['L'],
             D=self.model_config['attention']['D'],
             K=self.model_config['attention']['K'],
-        )
+        ).to(self.device)
 
     def build_classifier(self):
 
@@ -65,7 +71,7 @@ class pum6a(nn.Module):
 
         self.classifier = build_classifier(
             input=self.model_config['attention']['L'] * self.model_config['attention']['K']
-        )
+        ).to(self.device)
 
     def build_logistic(self):
 
@@ -73,8 +79,7 @@ class pum6a(nn.Module):
         Instance method for building logistic module according to config
         '''
 
-        self.A, self.B = build_logistic()
-
+        self.A, self.B = build_logistic(device=self.device)
 
     def _logistic(self, loss):
 
@@ -116,6 +121,8 @@ class pum6a(nn.Module):
                 Returns:
                         Y_prob (torch.Tensor): A tensor representation the bag probability
                         A (torch.Tensor): A tensor containing attention weight of instance features
+                        pi (torch.Tensor): A tensor representation the bag probability
+                        pij (torch.Tensor): A tensor containing attention weight of instance features
 
         '''
         x = x.squeeze(0)
@@ -141,6 +148,30 @@ class pum6a(nn.Module):
 
         return pi, pij, Y_prob, A
 
+    def _log_diverse_density(self, pi, y_bags):
+        r'''
+        Instance method to Compute the likelihood given bag labels y_bags and bag probabilities pi.
+                Args:
+                        pi (torch.Tensor): A tensor representation of the bag probabilities
+                        y_bags (torch.Tensor): A tensor representation of the bag labels
+                Returns:
+                        likelihood (torch.Tensor): A tensor representation of the likelihood
+
+        '''
+
+        z = torch.where(y_bags == -1)[0]
+        if z.nelement() > 0:
+            zero_sum = torch.sum(torch.log(1 - pi[z] + 1e-10))
+        else:
+            zero_sum = torch.tensor(0).float()
+
+        o = torch.where(y_bags == 1)[0]
+        if o.nelement() > 0:
+            one_sum = torch.sum(torch.log(pi[o] + 1e-10))
+        else:
+            one_sum = torch.tensor(0).float()
+        return zero_sum + one_sum
+
     def bag_forward(self, input):
 
         r'''
@@ -151,7 +182,7 @@ class pum6a(nn.Module):
                        Tensor representation of bag, bag_labels, and number of instance
                Returns:
                        loss (torch.Tensor): A tensor representation of model_factory loss
-
+                       data_inst (torch.Tensor...): pi, pij, Y_prob, A
        '''
 
 
@@ -173,4 +204,4 @@ class pum6a(nn.Module):
         else:
             loss = 0.01*(self.A**2+self.B**2)[0]
 
-        return loss
+        return loss, data_inst
