@@ -32,7 +32,7 @@ seed = 88888888
     type = 'linear'
     n_features = 6
     dropout_rate = 0
-    hidden_neurons = [12, 24]
+    hidden_neurons = [4, 2]
     batch_norm = 'True'
     hidden_activation = 'relu'
 
@@ -42,8 +42,8 @@ seed = 88888888
 #    K=1    # Attention model_factory output nodes
 
     [model.attention]
-    L=24  # Attention model_factory input nodes
-    D=6  # Attention model_factory intermediate nodes
+    L=2  # Attention model_factory input nodes
+    D=1  # Attention model_factory intermediate nodes
     K=1    # Attention model_factory output nodes
 
 
