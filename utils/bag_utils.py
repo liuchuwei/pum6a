@@ -4,7 +4,7 @@ import torch
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 from typing import *
-from sklearn.model_selection import train_test_split
+import scipy.io as scio
 
 from utils.gen_data import genData
 
@@ -125,6 +125,56 @@ class Bags(data_utils.Dataset):
 
         return X_inst
 
+    def load_trec9(self, data_file, dim):
+        """
+        Load SVM-light-extended formatted file and convert into the following form:
+
+        [ Bags( [ {'data': x, 'label': y}, ... ] ),
+          Bags( [ {'data': x, 'label': y}, ... ] ),
+                            :
+          Bags( [ {'data': x, 'label': y}, ... ] )]
+        """
+        bags = []
+
+        with open(data_file) as f:
+            for l in f.readlines():
+                if l[0] == '#':
+                    continue
+
+                ss = l.strip().split(' ')
+                x = np.zeros(dim)
+
+                for s in ss[1:]:
+                    i, xi = s.split(':')
+                    i = int(i) - 1
+                    xi = float(xi)
+                    x[i] = xi
+
+                _, bag_id, y = ss[0].split(':')
+                bags.append({'x': x, 'y': int(y), 'bag_id': int(bag_id)})
+
+        return bags
+
+    def dump_trec9(self, data_file, bags):
+        """
+        Dump SVM-light-extended formatted file.
+
+        0:bag_id:label 1:dim1 2:dim2 3:dim3 ...
+        1:bag_id:label 1:dim1 2:dim2 3:dim3 ...
+        2:bag_id:label 1:dim1 2:dim2 3:dim3 ...
+        ...
+        """
+        with open(data_file, 'w') as f:
+            total_id = 0
+
+            for bag_id, bag in enumerate(bags):
+                for inst in bag.instances:
+                    f.write("{}:{}:{} ".format(total_id, bag_id, inst['label']))
+                    for i, v in enumerate(inst['data']):
+                        if v != 0:
+                            f.write("{}:{} ".format(i, v))
+                    f.write("\n")
+                    total_id += 1
 
     def obtain_dataset(self):
 
@@ -136,51 +186,146 @@ class Bags(data_utils.Dataset):
 
             bags, bags_labels, X_inst, y_inst = genData(k=10, nbags=500, bag_contfactor=0.3, seed=331)
 
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
         elif self.dataset == "MNIST":
 
-            bag = Bags(dataset="MNIST")
+            pipeline = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))
+            ])
+
+            loader = data_utils.DataLoader(datasets.MNIST("dataset",
+                                                          train=True,
+                                                          download=True,
+                                                          transform=pipeline),
+                                           batch_size=60000,
+                                           shuffle=False)
+
+            for (batch_data, batch_labels) in loader:
+
+                self.n_inst = storeDataset(data=batch_data[torch.where(batch_labels != self.target)],
+                                           target=batch_labels[torch.where(batch_labels != self.target)])
+                self.a_inst = storeDataset(data=batch_data[torch.where(batch_labels == self.target)],
+                                           target=batch_labels[torch.where(batch_labels == self.target)])
+
 
         elif self.dataset == "MUSK1":
 
-            bag = Bags(dataset="MUSK1")
+            data = self.load_trec9('dataset/Benchmark/musk1.data', 166)
+            X_inst = np.stack([item['x'] for item in data])
+            y_inst = np.stack([item['y'] for item in data])
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
         elif self.dataset == "MUSK2":
 
-            bag = Bags(dataset="MUSK2")
+            data = self.load_trec9('dataset/Benchmark/musk2.data', 166)
+            X_inst = np.stack([item['x'] for item in data])
+            y_inst = np.stack([item['y'] for item in data])
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
         elif self.dataset == "FOX":
 
-            bag = Bags(dataset="FOX")
+            data = self.load_trec9('dataset/Benchmark/fox.data', 230)
+            X_inst = np.stack([item['x'] for item in data])
+            y_inst = np.stack([item['y'] for item in data])
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
 
         elif self.dataset == "TIGER":
 
-            bag = Bags(dataset="TIGER")
+            data = self.load_trec9('dataset/Benchmark/tiger.data', 230)
+            X_inst = np.stack([item['x'] for item in data])
+            y_inst = np.stack([item['y'] for item in data])
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
         elif self.dataset == "ELEPHANT":
 
-            bag = Bags(dataset="ELEPHANT")
+            data = self.load_trec9('dataset/Benchmark/elephant.data', 230)
+            X_inst = np.stack([item['x'] for item in data])
+            y_inst = np.stack([item['y'] for item in data])
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
         elif self.dataset == "Annthyroid":
 
-            bag = Bags(dataset="Annthyroid")
+            data = np.load("dataset/ADBench/2_annthyroid.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
 
         elif self.dataset == "PageBlock":
 
-            bag = Bags(dataset="PageBlock")
+            data = np.load("dataset/ADBench/27_PageBlocks.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
 
         elif self.dataset == "SpamBase":
 
-            bag = Bags(dataset="SpamBase")
+            data = np.load("dataset/ADBench/35_SpamBase.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
 
         elif self.dataset == "Waveform":
 
-            bag = Bags(dataset="Waveform")
+            data = np.load("dataset/ADBench/41_Waveform.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
 
         elif self.dataset == "Cardio":
 
