@@ -53,7 +53,7 @@ class BagsLoader(data_utils.Dataset):
                 bag: bag dataset
         '''
 
-        self.bag = bag
+        self.bags = bag
 
     def __len__(self):
         return len(self.bags)

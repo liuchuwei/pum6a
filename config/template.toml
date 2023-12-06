@@ -10,7 +10,6 @@ seed = 88888888
     mean_abag_length = 4
     var_abag_length = 1
     confactor = 0.3
-    n_pos = 50
     target = 1
     seed = 8888888
 
@@ -39,3 +38,11 @@ seed = 88888888
 
     trainer_chosen='adanTrainer'
     device = 'cuda'
+    n_splits = 5    # 5-fold-cross-validataion
+    save_dir = 'result/Annthyroid'
+    seed = 8888888
+
+    epochs = 300
+    batch_size = 16
+    n_pos = 60
+

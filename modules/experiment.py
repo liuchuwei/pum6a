@@ -16,10 +16,6 @@ def argparser():
                         help='Path to experiment config file.',
                         required=True)
 
-    parser.add_argument("--save_dir",
-                        help='Directory to save experiment results..',
-                        required=True)
-
     return parser
 
 
