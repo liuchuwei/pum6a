@@ -33,3 +33,9 @@ seed = 88888888
     L=500  # Attention model_factory input nodes
     D=128  # Attention model_factory intermediate nodes
     K=1    # Attention model_factory output nodes
+
+
+[trainer]
+
+    trainer_chosen='adanTrainer'
+    device = 'cuda'

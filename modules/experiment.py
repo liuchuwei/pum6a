@@ -4,9 +4,8 @@ import argparse
 from argparse import ArgumentDefaultsHelpFormatter
 
 import toml
-from utils.train_utils import set_seed, ReTrainer, puIF_Trainer, RF_Trainer
-from utils.load_dataset import LoadBag
-from utils.model_utils import LoadModel
+from utils.train_utils import set_seed
+from utils.io_utils import LoadBag, LoadModel, LoadTrainer
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -39,20 +38,8 @@ def main(args):
     model = LoadModel(config['model'])
 
     "5.train model_factory"
-    if config['model_chosen'] in ['puma', 'pum6a', 'iAE']:
-        trainer = ReTrainer(config=config,
-                          model=model,
-                          train_bag=train_bag,
-                          test_bag=test_bag)
-    elif config['model_chosen'] == "puIF":
-        trainer = puIF_Trainer(config=config,
-                          model=model,
-                          train_bag=train_bag,
-                          test_bag=test_bag)
-    elif config['model_chosen'] == "RF":
-        trainer = RF_Trainer(config=config,
-                          model=model,
-                          train_bag=train_bag,
-                          test_bag=test_bag)
 
+    trainer = LoadTrainer(config=config['trainer'],
+                          model=model,
+                          bag=bag)
     trainer.run()

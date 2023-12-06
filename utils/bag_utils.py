@@ -40,12 +40,36 @@ class storeDataset(object):
         self.X = data
         self.y = target
 
-
-class Bags(data_utils.Dataset):
+class BagsLoader(data_utils.Dataset):
 
     r'''
-    A PyTorch Dataset class for generating bag dataset using MNIST dataset or Cifar10 dataset.
+    A torch dataset class for loading bag dataset
+    '''
 
+    def __init__(self, bag):
+        r'''
+        Initialization function for the class
+            Args:
+                bag: bag dataset
+        '''
+
+        self.bag = bag
+
+    def __len__(self):
+        return len(self.bags)
+
+    def __getitem__(self, index):
+
+        bag = [self.bags[index], index]
+        idx = index
+
+        return bag, idx
+
+
+class Bags(object):
+
+    r'''
+    An object class for generating bag dataset
     '''
 
     def __init__(self,
@@ -96,16 +120,6 @@ class Bags(data_utils.Dataset):
         self.bags, self.labels = self.create_bag()
 
         # self.__getitem__(7)
-
-    def __len__(self):
-        return len(self.bags)
-
-    def __getitem__(self, index):
-
-        bag = [self.bags[index], index]
-        idx = index
-
-        return bag, idx
 
     def zscore_normalize(self, x):
 
