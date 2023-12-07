@@ -180,6 +180,7 @@ class adanTrainer(object):
                 os.mkdir(cur_dir)
 
         self.init_path = self.config['save_dir'] + "/" + self.suffix+ "init_model.pt"
+        self.log = self.config['save_dir'] + "/" + self.suffix+ "experiment_log.txt"
         torch.save(self.init_model, self.init_path)
 
     def initNegLabel(self):
@@ -334,6 +335,9 @@ class adanTrainer(object):
         print(f"bag_auc: {(100 * bag_auc):>0.1f}%, "
               f"ins_auc: {(100 * ins_auc):>0.1f}%")
 
+        log = "bag_auc,%.3f,ins_auc,%.3f" % (bag_auc, ins_auc)
+        with open(self.log, 'a+') as f:
+            f.write(log + '\n')
 
     def run(self):
 
