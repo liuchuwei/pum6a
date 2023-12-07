@@ -70,16 +70,16 @@ def SplitBag(n_splits: Optional[int] = 5,
     return train_bag_idx, val_bag_idx, test_bag_idx
 
 
-def genSuffix(seed: Optional[int]=88888888):
+def genSuffix(config: Optional[dict]=None):
 
     """
     Instance method to generate suffix
         Args:
-            seed (int): random seed of of the experiment
+            config (dict): config dictionary
         Return:
             suffix (str): suffix contain random seed and the experiment time
     """
-    suffix = datetime.datetime.now().strftime("%y%m%d%H%M%S") + "_" + str(seed) + "_"
+    suffix = datetime.datetime.now().strftime("%y%m%d%H%M%S") + "_" + str(config['seed']) + "_" + str(config['freq']) + "_"
 
     return suffix
 
@@ -153,7 +153,7 @@ class adanTrainer(object):
         self.init_model = model
         self.bag = bag
         self.n_splits = config['n_splits']
-        self.suffix = genSuffix(config['seed'])
+        self.suffix = genSuffix(config)
 
         self.device = (
             "cuda"
@@ -180,8 +180,8 @@ class adanTrainer(object):
             if not os.path.exists(cur_dir):
                 os.mkdir(cur_dir)
 
-        self.init_path = self.config['save_dir'] + "/" + self.suffix+ "init_model.pt"
-        self.log = self.config['save_dir'] + "/" + self.suffix+ "experiment_log.txt"
+        self.init_path = self.config['save_dir'] + "/" + self.suffix + "init_model.pt"
+        self.log = self.config['save_dir'] + "/" + self.suffix + "experiment_log.txt"
         torch.save(self.init_model, self.init_path)
 
     def initNegLabel(self):
@@ -337,11 +337,11 @@ class adanTrainer(object):
               f"ins_auc: {(100 * ins_auc):>0.1f}%")
 
         ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
-        ran_str += str(self.config['seed'])
+        ran_str += self.suffix
         log = "bag_auc,%.3f,ins_auc,%.3f,id,%s" % (bag_auc, ins_auc, ran_str)
         with open(self.log, 'a+') as f:
             f.write(log + '\n')
-        model_path = self.config['save_dir'] + "/" + ran_str + "_model.pt"
+        model_path = self.config['save_dir'] + "/" + ran_str + "model.pt"
         torch.save(self.model, model_path)
 
     def run(self):

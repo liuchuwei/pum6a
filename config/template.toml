@@ -1,6 +1,5 @@
 seed = 88888888
 
-
 [dataload]
 
     dataset = "Annthyroid"
@@ -47,6 +46,14 @@ seed = 88888888
     K=1    # Attention model_factory output nodes
 
 
+    [model.autoencoder]
+    type = 'linear'
+    n_features = 6
+    dropout_rate = 0.1
+    hidden_neurons = [4, 2]
+    batch_norm = 'True'
+    hidden_activation = 'relu'
+
 [trainer]
 
     trainer_chosen='adanTrainer'
@@ -57,8 +64,9 @@ seed = 88888888
 
     epochs = 1
     batch_size = 16
-    n_pos = 80  # 400/80*100%=5%
-    early_stopping = 3
+    n_pos = 20  # 500*0.8*0.05=20
+    freq = 5  # 5% freqency
+    early_stopping = 1
 
     [trainer.optimizer]
 
