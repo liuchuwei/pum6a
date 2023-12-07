@@ -1,4 +1,5 @@
 import os
+import string
 import random
 import numpy as np
 import torch
@@ -335,9 +336,13 @@ class adanTrainer(object):
         print(f"bag_auc: {(100 * bag_auc):>0.1f}%, "
               f"ins_auc: {(100 * ins_auc):>0.1f}%")
 
-        log = "bag_auc,%.3f,ins_auc,%.3f" % (bag_auc, ins_auc)
+        ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
+        ran_str += str(self.config['seed'])
+        log = "bag_auc,%.3f,ins_auc,%.3f,id,%s" % (bag_auc, ins_auc, ran_str)
         with open(self.log, 'a+') as f:
             f.write(log + '\n')
+        model_path = self.config['save_dir'] + "/" + ran_str + "_model.pt"
+        torch.save(self.model, model_path)
 
     def run(self):
 
