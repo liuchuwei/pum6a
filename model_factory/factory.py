@@ -134,6 +134,32 @@ def weightnoisyor(pij: Optional[list] = None,
 
     return noisyor
 
+
+def log_diverse_density(pi, y_bags):
+    r'''
+    Instance method to Compute the likelihood given bag labels y_bags and bag probabilities pi.
+            Args:
+                    pi (torch.Tensor): A tensor representation of the bag probabilities
+                    y_bags (torch.Tensor): A tensor representation of the bag labels
+            Returns:
+                    likelihood (torch.Tensor): A tensor representation of the likelihood
+
+    '''
+
+    z = torch.where(y_bags == -1)[0]
+    if z.nelement() > 0:
+        zero_sum = torch.sum(torch.log(1 - pi[z] + 1e-10))
+    else:
+        zero_sum = torch.tensor(0).float()
+
+    o = torch.where(y_bags == 1)[0]
+    if o.nelement() > 0:
+        one_sum = torch.sum(torch.log(pi[o] + 1e-10))
+    else:
+        one_sum = torch.tensor(0).float()
+
+    return zero_sum + one_sum
+
 class FeatureExtractor(object):
 
     r"""
@@ -222,3 +248,124 @@ class FeatureExtractor(object):
         else:
 
             raise ValueError('invalid feature extractor type!')
+
+
+class AutoEncoder(object):
+
+    r"""
+    Object class for building AutoEncoder
+    """
+
+    def __init__(self, model_config: Dict):
+
+        r"""
+        Initialization function for the class
+
+            Args:
+                    model_config (Dict): A dictionary containing model_factory configurations.
+
+            Returns:
+                    None
+        """
+
+        self.model_config = model_config
+        self.build_AE()
+
+    def build_linearAE(self):
+
+        r'''
+        Instance method for building linear autoencoder module according to config
+        '''
+
+        self.n_features = self.model_config['autoencoder']['n_features']
+        self.dropout_rate = self.model_config['autoencoder']['dropout_rate']
+        self.batch_norm = self.model_config['autoencoder']['batch_norm']
+        self.hidden_activation = self.model_config['autoencoder']['hidden_activation']
+
+        self.activation = self.hidden_activation
+        hidden_neurons = self.model_config['autoencoder']['hidden_neurons']
+        self.layers_neurons_ = [self.n_features, *hidden_neurons]
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+
+        self.encoder = torch.nn.Sequential()
+        self.decoder = torch.nn.Sequential()
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            if self.batch_norm:
+                self.encoder.add_module("batch_norm" + str(idx), torch.nn.BatchNorm1d(self.layers_neurons_[idx]))
+            self.encoder.add_module("linear" + str(idx),
+                                    torch.nn.Linear(self.layers_neurons_[idx], self.layers_neurons_[idx + 1]))
+            self.encoder.add_module(self.hidden_activation + str(idx), GetActivation(self.activation))
+            self.encoder.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            if self.batch_norm:
+                self.decoder.add_module("batch_norm" + str(idx),
+                                        torch.nn.BatchNorm1d(self.layers_neurons_decoder_[idx]))
+            self.decoder.add_module("linear" + str(idx), torch.nn.Linear(self.layers_neurons_decoder_[idx],
+                                                                         self.layers_neurons_decoder_[idx + 1]))
+            self.encoder.add_module(self.hidden_activation + str(idx), GetActivation(self.activation))
+            self.decoder.add_module("dropout" + str(idx), torch.nn.Dropout(self.dropout_rate))
+
+    def build_convAE(self):
+
+        r'''
+        Instance method for building linear autoencoder module according to config
+        '''
+
+        self.n_features = self.model_config['autoencoder']['n_features']
+        self.kernal_size = self.model_config['autoencoder']['kernal_size']
+        self.hidden_activation = self.model_config['autoencoder']['hidden_activation']
+        self.encoder_activation = self.model_config['autoencoder']['encoder_activation']
+        self.decoder_activation = self.model_config['autoencoder']['decoder_activation']
+
+        hidden_neurons = self.model_config['autoencoder']['hidden_neurons']
+        self.layers_neurons_ = [1, *hidden_neurons]
+        self.layers_neurons_decoder_ = self.layers_neurons_[::-1]
+        self.latent = self.model_config['autoencoder']['latent']
+
+        self.encoder = nn.Sequential()
+        self.decoder = nn.Sequential()
+
+        for idx, layer in enumerate(self.layers_neurons_[:-1]):
+            self.encoder.add_module("conv" + str(idx),
+                                    nn.Conv2d(self.layers_neurons_[idx], self.layers_neurons_[idx + 1],
+                                              kernel_size=self.kernal_size))
+            self.encoder.add_module("hidden_activation" + str(idx), GetActivation(self.hidden_activation))
+
+        self.encoder.add_module("faltten", nn.Flatten())
+        n_out_feat = (self.n_features[0] - len(hidden_neurons) * (self.kernal_size - 1))
+        n_linear = n_out_feat ** 2 * hidden_neurons[-1]
+        self.encoder.add_module("linear_last", nn.Linear(n_linear, self.latent))
+        self.encoder.add_module("out_acitvation", GetActivation(self.encoder_activation))
+
+        self.decoder.add_module("linear", nn.Linear(self.latent, n_linear))
+        self.decoder.add_module("input_activation", GetActivation(self.hidden_activation))
+        self.decoder.add_module("unflatten", nn.Unflatten(1, (self.layers_neurons_decoder_[0], n_out_feat, n_out_feat)))
+
+        for idx, layer in enumerate(self.layers_neurons_decoder_[:-1]):
+            self.decoder.add_module("convT" + str(idx),
+                                    nn.ConvTranspose2d(self.layers_neurons_decoder_[idx],
+                                                       self.layers_neurons_decoder_[idx + 1],
+                                                       kernel_size=self.kernal_size))
+            self.decoder.add_module("hidden_activation" + str(idx), self.hidden_activation)
+
+        self.encoder.add_module("out_acitvation", self.decoder_activation)
+
+    def build_AE(self):
+
+        r'''
+        Instance method for building autoencoder module according to config
+        '''
+
+        if self.model_config['autoencoder']['type'] == 'linear':
+
+            self.build_linearAE()
+
+        elif self.model_config['autoencoder']['type'] == 'conv':
+
+            self.build_convAE()
+
+        else:
+
+            raise ValueError('invalid autoencoder type!')

@@ -1,4 +1,6 @@
 from model_factory.PUM6A import pum6a
+from model_factory.PUMA import puma
+from model_factory.IAE import iAE
 from typing import *
 from utils.bag_utils import Bags
 from utils.train_utils import adanTrainer
@@ -56,10 +58,10 @@ def LoadModel(config):
         model = pum6a(config)
 
     elif config['model_chosen']=='puma':
-        pass
+        model = puma(config)
 
     elif config['model_chosen']=='iAE':
-        pass
+        model = iAE(config)
 
     elif config['model_chosen']=='puIF':
         pass
@@ -85,7 +87,7 @@ def LoadTrainer(config: Dict,
             trainer: model trainer
     """
 
-    if config['trainer_chosen']=="adanTrainer":
+    if config['trainer_chosen'] == "adanTrainer":
         trainer = adanTrainer(config=config,
                               model=model,
                               bag=bag)

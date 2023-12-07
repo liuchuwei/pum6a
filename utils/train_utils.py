@@ -272,7 +272,7 @@ class adanTrainer(object):
         bag_y = torch.stack([item.max() for item in self.test_bag_label]).float()
         ins_y = torch.concat([item.squeeze() for item in self.test_bag_label]).float()
 
-        bag_auc = roc_auc_score(bag_y, bag_y.cpu().detach().numpy())
+        bag_auc = roc_auc_score(bag_y, bag_pro.cpu().detach().numpy())
         ins_auc = roc_auc_score(ins_y, ins_pro.cpu().detach().numpy())
 
         return bag_auc, ins_auc

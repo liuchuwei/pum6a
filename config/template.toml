@@ -15,10 +15,8 @@ seed = 88888888
 
 [model]
 
-    model_chosen = 'pum6a'
+    model_chosen = 'iAE' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD, DSDD
     device = 'cuda'
-
-#    [model.feature_extractor]
 #    type = 'conv'
 #    kernal_size = 5
 #    pool_kernal_size = 2
@@ -62,11 +60,11 @@ seed = 88888888
     save_dir = 'result/Annthyroid'
     seed = 8888888
 
-    epochs = 1
+    epochs = 100
     batch_size = 16
     n_pos = 20  # 500*0.8*0.05=20
     freq = 5  # 5% freqency
-    early_stopping = 1
+    early_stopping = 3
 
     [trainer.optimizer]
 
