@@ -11,6 +11,7 @@ from torch import optim
 
 from sklearn.metrics import roc_auc_score
 
+
 def set_seed(seed: Optional[int] = 1):
 
     """
@@ -123,6 +124,7 @@ def BuildOptimizer(params, config=None):
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config['opt_restart'])
 
     return scheduler, optimizer
+
 
 class adanTrainer(object):
 
@@ -273,6 +275,66 @@ class adanTrainer(object):
 
         return bag_auc, ins_auc
 
+    def expriment(self, idx):
+
+        """
+        Instance method to execute one experiment
+        """
+
+        self.model = torch.load(self.init_path)
+        self.model.eval()
+
+        self.train_bag = [self.bag.bags[item] for item in self.train_idx[idx]]
+        self.val_bag = [self.bag.bags[item] for item in self.val_idx[idx]]
+        self.train_loader = data_utils.DataLoader(BagsLoader(self.train_bag),
+                                                  batch_size=self.config['batch_size'],
+                                                  shuffle=True,
+                                                  collate_fn=inference_collate)
+
+        train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
+        val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
+        total_label = torch.concat([train_bag_label, val_bag_label])
+        n_pos = self.config['n_pos']
+        pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
+        s = torch.zeros(len(total_label))
+        s[pos_idx] = 1
+
+        self.train_bag_label = s[:len(train_bag_label)]
+        self.val_bag_label = s[len(train_bag_label):]
+
+        self.initNegLabel()
+
+        self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
+        self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
+
+        self.scheduler, self.optimizer = BuildOptimizer(params=self.model.parameters(),
+                                                        config=self.config['optimizer'])
+
+        best = 88888888
+        for t in range(self.config['epochs']):
+
+            print(f"Epoch {t + 1}\n-------------------------------")
+            self.train_epoch()
+            cost = self.val_epoch()
+            print(f"val_bag_loss: {(cost):>0.1f}")
+
+            if cost < best:
+                best = cost
+                patience = 0
+            else:
+                patience += 1
+
+            if patience == self.config['early_stopping']:
+                break
+
+        print("Finish Training!")
+
+        bag_auc, ins_auc = self.tesing()
+
+        print(f"bag_auc: {(100 * bag_auc):>0.1f}%, "
+              f"ins_auc: {(100 * ins_auc):>0.1f}%")
+
+
     def run(self):
 
         "1. Split dataset: 5-fold-cross-validation"
@@ -285,57 +347,8 @@ class adanTrainer(object):
 
         "3. train and save model"
         for idx in range(self.n_splits):
-
-            self.model = torch.load(self.init_path)
-            self.model.eval()
-
-            self.train_bag = [self.bag.bags[item] for item in self.train_idx[idx]]
-            self.val_bag = [self.bag.bags[item] for item in self.val_idx[idx]]
-            self.train_loader = data_utils.DataLoader(BagsLoader(self.train_bag),
-                                                  batch_size=self.config['batch_size'],
-                                                  shuffle=True,
-                                                  collate_fn=inference_collate)
-
-            train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
-            val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
-            total_label = torch.concat([train_bag_label, val_bag_label])
-            n_pos = self.config['n_pos']
-            pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
-            s = torch.zeros(len(total_label))
-            s[pos_idx] = 1
-
-            self.train_bag_label = s[:len(train_bag_label)]
-            self.val_bag_label = s[len(train_bag_label):]
-
-            self.initNegLabel()
+            self.expriment(idx)
 
 
-            self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
-            self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
 
-            self.scheduler, self.optimizer = BuildOptimizer(params=self.model.parameters(),
-                                            config=self.config['optimizer'])
-
-            best = 88888888
-            for t in range(self.config['epochs']):
-
-                print(f"Epoch {t + 1}\n-------------------------------")
-                self.train_epoch()
-                cost = self.val_epoch()
-                print(f"val_bag_loss: {(cost):>0.1f}")
-
-                if cost < best:
-                    best = cost
-                    patience = 0
-                else:
-                    patience += 1
-
-                # if patience == self.config['early_stopping']:
-                #     break
-                bag_auc, ins_auc = self.tesing()
-
-                print(f"bag_auc: {(100 * bag_auc):>0.1f}%, "
-                      f"ins_auc: {(100 * ins_auc):>0.1f}%")
-
-            print("Done!")
 
