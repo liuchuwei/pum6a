@@ -106,8 +106,7 @@ class pum6a(nn.Module):
         '2. build attention module'
         self.build_attention()
 
-        '3. build classifier module'
-        self.build_classifier()
+
 
         '4. build logistic module'
         self.build_logistic()

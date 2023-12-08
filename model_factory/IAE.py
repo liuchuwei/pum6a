@@ -30,7 +30,6 @@ class iAE(nn.Module):
         )
 
         self.model_config = model_config
-        self.pesu_bag = None
         self.build_model()
 
     def build_logistic(self):

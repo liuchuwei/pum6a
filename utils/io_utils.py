@@ -1,9 +1,14 @@
 from model_factory.PUM6A import pum6a
 from model_factory.PUMA import puma
 from model_factory.IAE import iAE
+from model_factory.PUIF import puIF
+from model_factory.RandomForest import RF
 from typing import *
+
+from trainers.RandomFroestTrainer import RF_Trainer
 from utils.bag_utils import Bags
-from utils.train_utils import adanTrainer
+from trainers.AdanTrainer import adanTrainer
+from trainers.PUIF_Trainer import puIF_Trainer
 
 def LoadBag(config: Dict):
 
@@ -54,34 +59,35 @@ def LoadModel(config):
             model: Positive and Unlabeled Multi-Instance Model
     """
 
-    if config['model_chosen']=='pum6a':
+    if config['model_chosen'] == 'pum6a':
         model = pum6a(config)
 
-    elif config['model_chosen']=='puma':
+    elif config['model_chosen'] == 'puma':
         model = puma(config)
 
-    elif config['model_chosen']=='iAE':
+    elif config['model_chosen'] == 'iAE':
         model = iAE(config)
 
-    elif config['model_chosen']=='puIF':
+    elif config['model_chosen'] == 'puIF':
+        model = puIF(config)
+
+    elif config['model_chosen'] == 'RF':
+        model = RF(config)
+
+    elif config['model_chosen'] == 'PUSKC':
         pass
 
-    elif config['model_chosen']=='RF':
+    elif config['model_chosen'] == 'PUMIL':
         pass
 
-    elif config['model_chosen']=='PUSKC':
+    elif config['model_chosen'] == 'LSDD':
         pass
 
-    elif config['model_chosen']=='PUMIL':
-        pass
-
-    elif config['model_chosen']=='LSDD':
-        pass
-    
-    elif config['model_chosen']=='DSDD':
+    elif config['model_chosen'] == 'DSDD':
         pass
 
     return model
+
 
 def LoadTrainer(config: Dict,
                 model,
@@ -104,5 +110,13 @@ def LoadTrainer(config: Dict,
                               model=model,
                               bag=bag)
 
+    elif config['trainer_chosen'] == "puIF_Trainer":
+        trainer = puIF_Trainer(config=config,
+                              model=model,
+                              bag=bag)
 
-    return trainer
+    elif config['trainer_chosen'] == "RF_Trainer":
+        trainer = RF_Trainer(config=config,
+                              model=model,
+                              bag=bag)
+        return trainer

@@ -62,7 +62,7 @@ class RF_Trainer(object):
         Y = torch.concat(Y)
 
         from sklearn.ensemble import RandomForestRegressor
-        clf = RandomForestRegressor(max_depth=2, random_state=0)
+        clf = RandomForestRegressor(max_depth=2, random_state=888)
         clf.fit(X, Y)
 
         "2.Testing result"

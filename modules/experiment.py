@@ -34,7 +34,6 @@ def main(args):
     model = LoadModel(config['model'])
 
     "5.train model_factory"
-
     trainer = LoadTrainer(config=config['trainer'],
                           model=model,
                           bag=bag)
