@@ -9,6 +9,7 @@ from trainers.RandomFroestTrainer import RF_Trainer
 from utils.bag_utils import Bags
 from trainers.AdanTrainer import adanTrainer
 from trainers.PUIF_Trainer import puIF_Trainer
+from trainers.Trainer import trainer
 
 def LoadBag(config: Dict):
 
@@ -108,5 +109,11 @@ def LoadTrainer(config: Dict,
         trainer = RF_Trainer(config=config,
                               model=model,
                               bag=bag)
+
+    elif config['trainer_chosen'] == "Trainer":
+
+        trainer = trainer(config=config,
+                             model=model,
+                             bag=bag)
 
     return trainer
