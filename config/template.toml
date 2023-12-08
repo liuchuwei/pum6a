@@ -39,7 +39,7 @@ seed = 88888888
     n_features = 6
     dropout_rate = 0
     hidden_neurons = [4, 2] # [4, 2]
-    batch_norm = 'True'
+    batch_norm = true
     hidden_activation = 'relu'
 
     [model.classifier]
@@ -60,12 +60,12 @@ seed = 88888888
     n_features = 6
     dropout_rate = 0.1
     hidden_neurons = [4, 2]
-    batch_norm = 'True'
+    batch_norm = true
     hidden_activation = 'relu'
 
 [trainer]
 
-    trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer
+    trainer_chosen='Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
     save_dir = 'result/Annthyroid'
@@ -82,6 +82,13 @@ seed = 88888888
     opt = 'AdamW'
     lr = 0.0025 # 0.0001
     weight_decay=1e-05
-    amsgrad='True'
+    amsgrad=true
     opt_scheduler='none'
+
+    [trainer.lsdd]
+    aucplot=false
+    np=20
+    nu=180
+    prior=0.2
+    verbose=false
 

@@ -1,6 +1,7 @@
 from utils.train_utils import *
+from model_factory.LSDD import train_lsdd
 
-class trainer(object):
+class baseTrainer(object):
 
     """
     An object class for model training with self-adaptive process to select most reliable negative bags
@@ -52,7 +53,24 @@ class trainer(object):
         Instance method to execute one experiment
         """
 
-        a = 0
+        self.train_bag = [self.bag.bags[item] for item in self.train_idx[idx]]
+        self.val_bag = [self.bag.bags[item] for item in self.val_idx[idx]]
+
+        bag = self.train_bag + self.val_bag
+
+        train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
+        val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
+        total_label = torch.concat([train_bag_label, val_bag_label])
+        n_pos = self.config['n_pos']
+        pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
+        s = torch.zeros(len(total_label))
+        s[pos_idx] = 1
+
+        clf, best_param = train_lsdd(bag, self.config)
+
+        self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
+        self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
+
 
     def run(self):
 
