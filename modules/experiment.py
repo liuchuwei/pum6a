@@ -30,11 +30,13 @@ def main(args):
     "3.load dataset"
     bag = LoadBag(config['dataload'])
 
-    "4.load model_factory"
-    model = LoadModel(config['model'])
+    "4.load model"
+    if not config['model']['chosen'] in ['PU-SKC', 'puMIL', 'LSDD', 'DSDD']:
+        model = LoadModel(config['model'])
 
-    "5.train model_factory"
+    "5.train model"
     trainer = LoadTrainer(config=config['trainer'],
                           model=model,
                           bag=bag)
     trainer.run()
+

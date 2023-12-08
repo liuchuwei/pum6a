@@ -74,17 +74,6 @@ def LoadModel(config):
     elif config['model_chosen'] == 'RF':
         model = RF(config)
 
-    elif config['model_chosen'] == 'PUSKC':
-        pass
-
-    elif config['model_chosen'] == 'PUMIL':
-        pass
-
-    elif config['model_chosen'] == 'LSDD':
-        pass
-
-    elif config['model_chosen'] == 'DSDD':
-        pass
 
     return model
 
@@ -119,4 +108,5 @@ def LoadTrainer(config: Dict,
         trainer = RF_Trainer(config=config,
                               model=model,
                               bag=bag)
-        return trainer
+
+    return trainer

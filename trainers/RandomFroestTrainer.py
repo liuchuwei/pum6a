@@ -32,6 +32,25 @@ class RF_Trainer(object):
         self.bag = bag
         self.n_splits = config['n_splits']
         self.suffix = genSuffix(config)
+        self.saveInit()
+
+    def saveInit(self):
+
+        """
+        Instance method to create output path and save initiate model
+        """
+
+        tmp_dir = self.config['save_dir'].split('/')
+        cur_dir = os.getcwd()
+
+        for item in tmp_dir:
+
+            cur_dir = cur_dir + "/" + item
+
+            if not os.path.exists(cur_dir):
+                os.mkdir(cur_dir)
+
+        self.log = self.config['save_dir'] + "/" + self.suffix + "experiment_log.txt"
 
     def expriment(self, idx):
 
@@ -88,6 +107,12 @@ class RF_Trainer(object):
 
         print(f"Bag_auc: {(100 * bag_auc):>0.1f}%, "
               f"Instance_auc: {(100 * ins_auc):>0.1f}%.")
+
+        ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
+        ran_str += self.suffix
+        log = "bag_auc,%.3f,ins_auc,%.3f,id,%s" % (bag_auc, ins_auc, ran_str)
+        with open(self.log, 'a+') as f:
+            f.write(log + '\n')
 
     def run(self):
 
