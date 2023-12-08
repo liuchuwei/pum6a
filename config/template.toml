@@ -66,6 +66,7 @@ seed = 88888888
 [trainer]
 
     trainer_chosen='Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    model_chosen='puMIL' # PU-SKC, puMIL, LSDD, DSDD
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
     save_dir = 'result/Annthyroid'
@@ -87,6 +88,28 @@ seed = 88888888
 
     [trainer.lsdd]
     aucplot=false
+    np=20
+    nu=180
+    prior=0.2
+    verbose=false
+
+    [trainer.dsdd]
+    aucplot=false
+    np=20
+    nu=180
+    prior=0.2
+    verbose=false
+
+    [trainer.pumil]
+    aucplot=false
+    np=20
+    nu=180
+    prior=0.2
+    verbose=false
+
+    [trainer.puskc]
+    aucplot=false
+    loss='double_hinge'
     np=20
     nu=180
     prior=0.2

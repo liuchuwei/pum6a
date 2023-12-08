@@ -1,5 +1,5 @@
 from utils.train_utils import *
-from model_factory.LSDD import train_lsdd
+from model_factory.factory import *
 
 class baseTrainer(object):
 
@@ -66,11 +66,46 @@ class baseTrainer(object):
         s = torch.zeros(len(total_label))
         s[pos_idx] = 1
 
-        clf, best_param = train_lsdd(bag, self.config)
+        data = []
+        for id, item in enumerate(s):
+            data.append({'instance':bag[idx], 'label': [s[id]]})
+
+        if self.config['model_chosen'] == "LSDD":
+
+            clf, best_param = train_lsdd(data, self.config['lsdd'])
+
+        elif self.config['model_chosen'] == "DSDD":
+
+            clf, best_param = train_dsdd(data, self.config['dsdd'])
+
+        elif self.config['model_chosen'] == "puMIL":
+
+            clf = pumil(
+              data,
+              50,
+                (len(data)-50),
+              self.config['pumil'])
+
+        elif self.config['model_chosen'] == "PU-SKC":
+
+            clf, best_param = train_pu_skc(data, self.config['puskc'])
 
         self.test_bag = [self.bag.bags[item] for item in self.test_idx[idx]]
         self.test_bag_label = [self.bag.labels[item] for item in self.test_idx[idx]]
 
+        data_test = []
+        st = torch.stack([item.max() for item in self.test_bag_label]).float()
+
+        for idx, item in enumerate(st):
+            data_test.append({'instance':bag[idx], 'label': [s[idx]]})
+
+        bag_auc = MI.print_evaluation_result(clf, data_test, self.config['lsdd'])
+
+        ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
+        ran_str += self.suffix
+        log = "bag_auc,%.3f,id,%s" % (bag_auc, ran_str)
+        with open(self.log, 'a+') as f:
+            f.write(log + '\n')
 
     def run(self):
 
