@@ -114,7 +114,11 @@ class Bags(object):
         self.target = target
         self.num_bag = num_bag
         self.r = np.random.RandomState(seed)
-        self.bags, self.labels = self.create_bag()
+        self.obtain_dataset()
+
+        if not dataset in ["MUSK1", "MUSK2", "FOX", "TIGER", "ELEPHANT"]:
+
+            self.bags, self.labels = self.create_bag()
 
         # self.__getitem__(7)
 
@@ -136,56 +140,47 @@ class Bags(object):
 
         return X_inst
 
-    def load_trec9(self, data_file, dim):
+    def load_bag(self, data_file):
         """
-        Load SVM-light-extended formatted file and convert into the following form:
-
-        [ Bags( [ {'data': x, 'label': y}, ... ] ),
-          Bags( [ {'data': x, 'label': y}, ... ] ),
-                            :
-          Bags( [ {'data': x, 'label': y}, ... ] )]
+        Instance method to load bag dataset from RealWorld
         """
         bags = []
-
+        instances = []
+        labels = []
         with open(data_file) as f:
             for l in f.readlines():
-                if l[0] == '#':
-                    continue
 
-                ss = l.strip().split(' ')
-                x = np.zeros(dim)
+                ss = np.array(l.split(',')).astype(np.float32)
+                bags.append(str(int(ss[1])))
+                labels.append(int(ss[0]))
+                instances.append(ss[2:])
 
-                for s in ss[1:]:
-                    i, xi = s.split(':')
-                    i = int(i) - 1
-                    xi = float(xi)
-                    x[i] = xi
+        old_bag = bags[0]
+        label = []
+        instance = []
+        bag_list = []
+        for idx, item in enumerate(bags):
+            cur_bag = item
+            if cur_bag==old_bag:
+                label.append(labels[idx])
+                instance.append(instances[idx])
+            else:
+                old_bag = cur_bag
+                bag_list.append({'labels':label, 'instances':instance})
+                label = [labels[idx]]
+                instance = [instances[idx]]
 
-                _, bag_id, y = ss[0].split(':')
-                bags.append({'x': x, 'y': int(y), 'bag_id': int(bag_id)})
+        last_bag = bags[-1]
+        label = []
+        instance = []
+        for idx, item in enumerate(bags):
+            cur_bag = item
+            if cur_bag==last_bag:
+                label.append(labels[idx])
+                instance.append(instances[idx])
+        bag_list.append({'labels': label, 'instances': instance})
 
-        return bags
-
-    def dump_trec9(self, data_file, bags):
-        """
-        Dump SVM-light-extended formatted file.
-
-        0:bag_id:label 1:dim1 2:dim2 3:dim3 ...
-        1:bag_id:label 1:dim1 2:dim2 3:dim3 ...
-        2:bag_id:label 1:dim1 2:dim2 3:dim3 ...
-        ...
-        """
-        with open(data_file, 'w') as f:
-            total_id = 0
-
-            for bag_id, bag in enumerate(bags):
-                for inst in bag.instances:
-                    f.write("{}:{}:{} ".format(total_id, bag_id, inst['label']))
-                    for i, v in enumerate(inst['data']):
-                        if v != 0:
-                            f.write("{}:{} ".format(i, v))
-                    f.write("\n")
-                    total_id += 1
+        return bag_list
 
     def obtain_dataset(self):
 
@@ -227,66 +222,64 @@ class Bags(object):
 
         elif self.dataset == "MUSK1":
 
-            from mil.data.datasets import musk1
-            (bags_train, y_train), (bags_test, y_test) = musk1.load()
-            data = self.load_trec9('dataset/Benchmark/musk1.data', 166)
-            X_inst = np.stack([item['x'] for item in data])
-            y_inst = np.stack([item['y'] for item in data])
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+            data = self.load_bag('dataset/RealWord/Musk1.csv')
+            self.labels = [torch.Tensor(item['labels'])==self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
         elif self.dataset == "MUSK2":
 
-            data = self.load_trec9('dataset/Benchmark/musk2.data', 166)
-            X_inst = np.stack([item['x'] for item in data])
-            y_inst = np.stack([item['y'] for item in data])
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+            data = self.load_bag('dataset/RealWord/Musk2.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
         elif self.dataset == "FOX":
 
-            data = self.load_trec9('dataset/Benchmark/fox.data', 230)
-            X_inst = np.stack([item['x'] for item in data])
-            y_inst = np.stack([item['y'] for item in data])
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+            data = self.load_bag('dataset/RealWord/Fox.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
 
         elif self.dataset == "TIGER":
 
-            data = self.load_trec9('dataset/Benchmark/tiger.data', 230)
-            X_inst = np.stack([item['x'] for item in data])
-            y_inst = np.stack([item['y'] for item in data])
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+            data = self.load_bag('dataset/RealWord/Tiger.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
         elif self.dataset == "ELEPHANT":
 
-            data = self.load_trec9('dataset/Benchmark/elephant.data', 230)
-            X_inst = np.stack([item['x'] for item in data])
-            y_inst = np.stack([item['y'] for item in data])
+            data = self.load_bag('dataset/RealWord/Elephant.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+        elif self.dataset == "Protein":
 
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+            data = self.load_bag('dataset/RealWord/Protein.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
+
+        elif self.dataset == "Corel_dogs":
+
+            data = self.load_bag('dataset/RealWord/CorelDogs.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
+
+        elif self.dataset == "Ucsb_breast_cancer":
+
+            data = self.load_bag('dataset/RealWord/UCSBBreastCancer.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
+
+        elif self.dataset == "Web_recommendation_1":
+
+            data = self.load_bag('dataset/RealWord/Web1.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
+
+        elif self.dataset == "Birds_brown_creeper":
+
+            data = self.load_bag('dataset/RealWord/BrownCreeper.csv')
+            self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
+            self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
 
         elif self.dataset == "Annthyroid":
 
@@ -542,8 +535,6 @@ class Bags(object):
         r'''
         Instance method for generating bag dataset
         '''
-
-        self.obtain_dataset()
 
         bags_list = []
         labels_list = []
