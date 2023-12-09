@@ -1,0 +1,35 @@
+seed = 8
+
+[dataload]
+
+    dataset = "MUSK1"
+    num_bag = 500
+    mean_nbag_length = 10
+    var_nbag_length = 2
+#    mean_abag_length = 4
+#    var_abag_length = 1
+    confactor = 0.3
+    target = 1
+    seed = 8
+
+
+[model]
+
+    model_chosen = 'RF'
+
+    [model.randomforest]
+     n_estimators = [10, 20, 30, 40, 50, 100]
+     max_features = ['auto', 'sqrt']
+     max_depth = [2, 4, 6, 8, 10, 20]
+     min_samples_split = [1, 2, 4, 6, 8]
+     min_samples_leaf = [1, 2, 4, 6, 8]
+
+[trainer]
+
+    trainer_chosen='RF_Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    model_chosen='RF'
+    n_splits = 5    # 5-fold-cross-validataion
+    save_dir = 'result/MUSK1/RF'
+    seed = 8
+    freq = 5
+    n_pos = 6

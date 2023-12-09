@@ -7,7 +7,7 @@ from typing import *
 import scipy.io as scio
 
 from utils.gen_data import genData
-
+import random
 
 def inference_collate(batch):
 
@@ -77,8 +77,8 @@ class Bags(object):
                  num_bag: Optional[int]=250,
                  mean_nbag_length: Optional[int]=10,
                  var_nbag_length: Optional[int]=2,
-                 mean_abag_length: Optional[int]=4,
-                 var_abag_length: Optional[int]=1,
+                 # mean_abag_length: Optional[int]=4,
+                 # var_abag_length: Optional[int]=1,
                  confactor: Optional[int]=0.3,
                  target: Optional[int]=1,
                  seed: Optional[int]=8888888
@@ -108,8 +108,8 @@ class Bags(object):
         self.dataset = dataset
         self.mean_nbag_length = mean_nbag_length
         self.var_nbag_length = var_nbag_length
-        self.mean_abag_length = mean_abag_length
-        self.var_abag_length = var_abag_length
+        # self.mean_abag_length = mean_abag_length
+        # self.var_abag_length = var_abag_length
         self.confactor = confactor
         self.target = target
         self.num_bag = num_bag
@@ -227,6 +227,8 @@ class Bags(object):
 
         elif self.dataset == "MUSK1":
 
+            from mil.data.datasets import musk1
+            (bags_train, y_train), (bags_test, y_test) = musk1.load()
             data = self.load_trec9('dataset/Benchmark/musk1.data', 166)
             X_inst = np.stack([item['x'] for item in data])
             y_inst = np.stack([item['y'] for item in data])
@@ -551,7 +553,8 @@ class Bags(object):
 
             label = np.random.binomial(1, self.confactor, size=1)[0]
             n_bag_length = np.int32(self.r.normal(self.mean_nbag_length, self.var_nbag_length, 1))
-            a_bag_length = np.int32(self.r.normal(self.mean_abag_length, self.var_abag_length, 1))
+            # a_bag_length = np.int32(self.r.normal(self.mean_abag_length, self.var_abag_length, 1))
+            a_bag_length = np.int32(random.randint(0, self.mean_nbag_length/2))
 
             if label == 0:
                 bag_length = n_bag_length + a_bag_length

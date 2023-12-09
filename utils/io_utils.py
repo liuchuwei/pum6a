@@ -27,8 +27,8 @@ def LoadBag(config: Dict):
     num_bag = config['num_bag']
     mean_nbag_length = config['mean_nbag_length']
     var_nbag_length = config['var_nbag_length']
-    mean_abag_length = config['mean_abag_length']
-    var_abag_length = config['var_abag_length']
+    # mean_abag_length = config['mean_abag_length']
+    # var_abag_length = config['var_abag_length']
     confactor = config['confactor']
     target = config['target']
     seed = config['seed']
@@ -38,8 +38,8 @@ def LoadBag(config: Dict):
         num_bag=num_bag,
         mean_nbag_length=mean_nbag_length,
         var_nbag_length=var_nbag_length,
-        mean_abag_length=mean_abag_length,
-        var_abag_length=var_abag_length,
+        # mean_abag_length=mean_abag_length,
+        # var_abag_length=var_abag_length,
         confactor=confactor,
         target=target,
         seed=seed

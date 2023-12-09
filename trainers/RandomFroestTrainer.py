@@ -82,6 +82,7 @@ class RF_Trainer(object):
                                        param_distributions=self.init_model.random_grid,
                                        n_iter=100, cv=3, verbose=2,
                                        random_state=666, n_jobs=-1)
+        # clf = self.init_model.rf
 
         clf.fit(X, Y)
 

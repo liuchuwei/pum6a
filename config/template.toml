@@ -2,7 +2,7 @@ seed = 88888888
 
 [dataload]
 
-    dataset = "Annthyroid"
+    dataset = "Thyroid"
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2
@@ -74,7 +74,7 @@ seed = 88888888
 
     epochs = 1000 # 100, 1000
     batch_size = 224 # 16/16*14=224
-    n_pos = 20  # 500*0.8*0.05=20
+    n_pos = 6  # 500*0.3*0.8**0.10=6
     freq = 5  # 5% freqency
     early_stopping = 3
 
