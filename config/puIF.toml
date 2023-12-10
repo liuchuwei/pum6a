@@ -21,12 +21,9 @@ seed = 8
     type = 'linear'
     n_features = 166
     dropout_rate = 0
-    hidden_neurons = [4, 1] # [4, 2]
+    hidden_neurons = [4, 2] # [4, 2]
     batch_norm = true
     hidden_activation = 'relu'
-
-    [model.isoForest]
-    contamination=0.25 # mean_abag_length/mean_nbag_length
 
 [trainer]
 

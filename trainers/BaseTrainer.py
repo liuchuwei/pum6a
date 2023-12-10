@@ -70,7 +70,7 @@ class baseTrainer(object):
         for id, item in enumerate(s):
             data.append({'instance':bag[idx], 'label': [s[id]]})
 
-        if self.config['model_chosen'] == "LSDD":
+        if self.config['model_chosen'] == "LSDD.toml":
 
             clf, best_param = train_lsdd(data, self.config['lsdd'])
 

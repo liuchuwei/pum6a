@@ -31,7 +31,7 @@ def main(args):
     bag = LoadBag(config['dataload'])
 
     "4.load model"
-    if not config['model']['model_chosen'] in ['PU-SKC', 'puMIL', 'LSDD', 'DSDD']:
+    if not config['model']['model_chosen'] in ['PU-SKC', 'puMIL', 'LSDD.toml', 'DSDD']:
         model = LoadModel(config['model'])
 
     else:

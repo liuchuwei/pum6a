@@ -12,7 +12,7 @@ seed = 8
 
 [model]
 
-    model_chosen = 'pum6a' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD, DSDD
+    model_chosen = 'pum6a' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD.toml, DSDD
     device = 'cuda'
 
     [model.feature_extractor]
