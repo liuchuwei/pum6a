@@ -29,7 +29,6 @@ def set_seed(seed: Optional[int] = 1):
 
 
 def SplitBag(n_splits: Optional[int] = 5,
-             num_bag: Optional[int] = 500,
              bag_labels: Optional[list] = None
              ):
     r"""
@@ -37,7 +36,6 @@ def SplitBag(n_splits: Optional[int] = 5,
 
         Args:
             n_splits (int): number of splits of StratifiedKFold
-            num_bag (int): number of total bag datasets
             bag_labels (list): bag labels
 
         Return:
@@ -47,7 +45,7 @@ def SplitBag(n_splits: Optional[int] = 5,
     """
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=666)
-    bag_idx = range(num_bag)
+    bag_idx = range(len(bag_labels))
     bag_label = torch.stack([torch.max(item) for item in bag_labels]).float()
 
     train_bag_idx = []

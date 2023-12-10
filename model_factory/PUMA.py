@@ -153,6 +153,12 @@ class puma(nn.Module):
         data_inst = [self._forward(item.to(self.device)) for item in bag]
         bag_pro = torch.concat([item[0] for item in data_inst]).to(self.device)
         bag_loss = torch.sum(-1. * (bag_label * torch.log(bag_pro) + (1. - bag_label) * torch.log(1. - bag_pro)))
+        inf = float("inf")
+        if bag_loss == inf:
+            bag_loss = 6666666
+
+        if torch.isnan(bag_loss):
+            bag_loss = 6666666
 
         return bag_loss
 

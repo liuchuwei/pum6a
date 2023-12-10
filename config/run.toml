@@ -6,8 +6,6 @@ seed = 8
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2
-#    mean_abag_length = 4
-#    var_abag_length = 1
     confactor = 0.3
     target = 1
     seed = 8
@@ -15,21 +13,37 @@ seed = 8
 
 [model]
 
-    model_chosen = 'RF'
+    model_chosen = 'puma' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD, DSDD
+    device = 'cuda'
 
-    [model.randomforest]
-     n_estimators = [10, 20, 30, 40, 50, 100]
-     max_features = ['auto', 'sqrt']
-     max_depth = [2, 4, 6, 8, 10, 20]
-     min_samples_split = [1, 2, 4, 6, 8]
-     min_samples_leaf = [1, 2, 4, 6, 8]
+    [model.autoencoder]
+    type = 'linear'
+    n_features = 166
+    dropout_rate = 0.1
+    hidden_neurons = [64, 32, 16]
+    batch_norm = true
+    hidden_activation = 'relu'
+
 
 [trainer]
 
-    trainer_chosen='RF_Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
-    model_chosen='RF'
+    trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    model_chosen='puma' # PU-SKC, puMIL, LSDD, DSDD
+    device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/MUSK1/RF'
+    save_dir = 'result/MUSK1/puma/10'
     seed = 8
-    freq = 5
-    n_pos = 6
+
+    epochs = 300 # 100, 1000
+    batch_size = 224 # 16/16*14=224
+    n_pos = 4  # 500*0.3*0.8**0.10=6
+    freq = 10  # 5% freqency
+    early_stopping = 3
+
+    [trainer.optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0025 # 0.0001
+    weight_decay=1e-05
+    amsgrad=true
+    opt_scheduler='none'

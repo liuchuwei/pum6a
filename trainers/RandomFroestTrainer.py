@@ -119,7 +119,6 @@ class RF_Trainer(object):
 
         "1. Split dataset: 5-fold-cross-validation"
         self.train_idx, self.val_idx, self.test_idx = SplitBag(n_splits=self.n_splits,
-                                                               num_bag=self.bag.num_bag,
                                                                bag_labels=self.bag.labels)
 
         "2 train and save model"

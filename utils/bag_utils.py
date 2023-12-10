@@ -155,6 +155,7 @@ class Bags(object):
                 labels.append(int(ss[0]))
                 instances.append(ss[2:])
 
+        instances = self.zscore_normalize(np.stack(instances))
         old_bag = bags[0]
         label = []
         instance = []

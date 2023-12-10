@@ -1,3 +1,5 @@
+import torch
+
 from model_factory.PUM6A import pum6a
 from model_factory.PUMA import puma
 from model_factory.IAE import iAE
@@ -44,6 +46,11 @@ def LoadBag(config: Dict):
         target=target,
         seed=seed
     )
+
+    bags_num = len(bag.bags)
+    num_pos = torch.stack([item.max() for item in bag.labels]).sum()
+    feature = bag.bags[0].size()[1]
+    print("Bags number: %s; Positive bags number: %s; Feature number: %s"% (bags_num, num_pos.item(), feature))
 
     return bag
 
