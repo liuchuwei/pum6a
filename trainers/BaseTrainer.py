@@ -62,7 +62,7 @@ class baseTrainer(object):
         train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
         val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
         total_label = torch.concat([train_bag_label, val_bag_label])
-        n_pos = self.config['n_pos']
+        n_pos = (self.config['freq'] * torch.sum(total_label)).int().numpy()
         pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
         s = torch.zeros(len(total_label))
         s[pos_idx] = 1

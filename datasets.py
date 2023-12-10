@@ -24,7 +24,7 @@ elif dataset == "Web_recommendation_1":
     pass
 elif dataset == "Birds_brown_creeper":
     pass
-elif dataset == "Annthyroid":
+elif dataset == "Annthyroid":  # 500 bags, 144 positive bags, 6 features
     pass
 elif dataset == "PageBlock":
     pass
