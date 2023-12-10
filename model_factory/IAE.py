@@ -133,10 +133,11 @@ class iAE(nn.Module):
         idx_l2 = torch.where(bag_labels == -1)[0]
         idx_l3 = torch.where(bag_labels == 1)[0]
         if idx_l2.shape[0] > 0:
-            l2 = torch.concat([bag[item] for item in idx_l1])
+            l2 = torch.concat([bag[item] for item in idx_l2])
             enc = self.encoder(l2)
             dec = self.decoder(enc)
             l2_dist = torch.nn.PairwiseDistance(p=2)(l2, dec)
+            # loss = l2_dist.mean()
             loss += l2_dist.mean()
 
             if idx_l3.shape[0]>0:
@@ -156,6 +157,8 @@ class iAE(nn.Module):
 
                 iAUC_loss /= (len(l2_dist)*len(l3_dist))
                 loss -= iAUC_loss
+        # else:
+        #     loss = 0.01 * (self.A ** 2 + self.B ** 2)[0]
 
         return loss, data_inst
 
@@ -174,6 +177,11 @@ class iAE(nn.Module):
         data_inst = [self._forward(item.to(self.device)) for item in bag]
         bag_pro = torch.concat([item[0] for item in data_inst]).to(self.device)
         bag_loss = torch.sum(-1. * (bag_label * torch.log(bag_pro) + (1. - bag_label) * torch.log(1. - bag_pro)))
+
+        if torch.isinf(bag_loss):
+            bag_loss = torch.tensor(6666666)
+        if torch.isnan(bag_loss):
+            bag_loss = torch.tensor(6666666)
 
         return bag_loss
 

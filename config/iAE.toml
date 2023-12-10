@@ -20,7 +20,7 @@ seed = 8
     type = 'linear'
     n_features = 166
     dropout_rate = 0.1
-    hidden_neurons = [128, 64, 32, 2]
+    hidden_neurons = [256, 128, 64, 32, 2]
     batch_norm = true
     hidden_activation = 'relu'
 

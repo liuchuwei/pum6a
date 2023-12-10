@@ -4,7 +4,7 @@ if dataset == "construct":
     pass
 elif dataset == "MNIST":
     pass
-elif dataset == "MUSK1":  # 92 bags, 47 pos
+elif dataset == "MUSK1":  # 92 bags, 47 pos, 166 feature
     pass
 elif dataset == "MUSK2":
     pass

@@ -2,7 +2,7 @@ seed = 8
 
 [dataload]
 
-    dataset = "MUSK1"
+    dataset = "PageBlock"
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2
@@ -18,10 +18,10 @@ seed = 8
 
     [model.autoencoder]
     type = 'linear'
-    n_features = 166
-    dropout_rate = 0.1
-    hidden_neurons = [128, 64, 32, 2]
-    batch_norm = true
+    n_features = 10
+    dropout_rate = 0
+    hidden_neurons =  [8, 4]
+    batch_norm = false
     hidden_activation = 'relu'
 
 
@@ -33,7 +33,7 @@ seed = 8
     save_dir = 'result/MUSK1/iAE/10'
     seed = 8
 
-    epochs = 300 # 100, 1000
+    epochs = 100 # 100, 1000
     batch_size = 16 # 16/16*14=224
     n_pos = 40  # 47*0.8**=6
     freq = 10  # 5% freqency
