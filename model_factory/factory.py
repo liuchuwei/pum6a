@@ -448,7 +448,7 @@ def train_pu_skc(data, args):
     return model, metadata
 
   # cross validation
-  best_param = {}
+  best_param = {'degree': None, 'reg': None}
   best_error = np.inf
   if args['verbose']:
     print("# *** Cross Validation ***")

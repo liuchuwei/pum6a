@@ -93,6 +93,13 @@ def prediction_error(bags, model, theta):
   N1 = len(MI.extract_bags(bags, 1))
   N0 = len(MI.extract_bags(bags, 0))
   error = nc_risk(theta, N1, N0, zero_one_loss)
-  return sum(list(map(lambda B:
-    float(error(model(B.data()), Variable(np.array([[B.label()]]).astype(np.float32))).data),
-    bags))) - theta
+
+  res = []
+  for item in bags:
+    res.append(float(error(model(item['instance']), Variable(np.array([[item['label']]]).astype(np.float32))).data)- theta)
+
+  out = sum(res)
+  return out
+  # return sum(list(map(lambda B:
+  #   float(error(model(B['instance']), Variable(np.array([[B['label']]]).astype(np.float32))).data),
+  #   bags))) - theta
