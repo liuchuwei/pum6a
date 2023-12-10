@@ -28,6 +28,7 @@ class baseTrainer(object):
         self.bag = bag
         self.n_splits = config['n_splits']
         self.suffix = genSuffix(config)
+        self.saveInit()
 
     def saveInit(self):
 
@@ -70,13 +71,13 @@ class baseTrainer(object):
         for id, item in enumerate(s):
             data.append({'instance':bag[idx], 'label': [s[id]]})
 
-        if self.config['model_chosen'] == "LSDD.toml":
+        if self.config['model_chosen'] == "LSDD":
 
             clf, best_param = train_lsdd(data, self.config['lsdd'])
 
         elif self.config['model_chosen'] == "DSDD":
 
-            clf, best_param = train_dsdd(data, self.config['dsdd'])
+            clf = train_dsdd(data, self.config['dsdd'])
 
         elif self.config['model_chosen'] == "puMIL":
 
@@ -99,7 +100,21 @@ class baseTrainer(object):
         for idx, item in enumerate(st):
             data_test.append({'instance':bag[idx], 'label': [s[idx]]})
 
-        bag_auc = MI.print_evaluation_result(clf, data_test, self.config['lsdd'])
+        if self.config['model_chosen'] == "LSDD":
+
+            bag_auc = MI.print_evaluation_result(clf, data_test, self.config['lsdd'])
+
+        elif self.config['model_chosen'] == "DSDD":
+
+            bag_auc = MI.print_evaluation_result(clf, data_test, self.config['dsdd'])
+
+        elif self.config['model_chosen'] == "puMIL":
+
+            bag_auc = MI.print_evaluation_result(clf, data_test, self.config['pumil'])
+
+        elif self.config['model_chosen'] == "PU-SKC":
+
+            bag_auc = MI.print_evaluation_result(clf, data_test, self.config['puskc'])
 
         ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
         ran_str += self.suffix

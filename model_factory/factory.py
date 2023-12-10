@@ -450,7 +450,7 @@ def train_pu_skc(data, args):
   # cross validation
   best_param = {}
   best_error = np.inf
-  if args.verbose:
+  if args['verbose']:
     print("# *** Cross Validation ***")
   for deg, reg in itertools.product(degs, regs):
     try:
@@ -462,7 +462,7 @@ def train_pu_skc(data, args):
 
       error = np.mean(errors)
 
-      if args.verbose:
+      if args['verbose']:
         print("#  degree = {} / reg = {:.3e} : theta = {:.3e} / error = {:.3e}".format(deg, reg, metadata['theta'], error))
 
       if error < best_error:
@@ -471,16 +471,16 @@ def train_pu_skc(data, args):
 
     except ValueError:
       # sometimes fails for large degree
-      if args.verbose:
+      if args['verbose']:
         print("#  degree = {} / reg = {:.3e} : error = NaN".format(deg, reg))
 
-  if args.verbose:
+  if args['verbose']:
     print("# {}".format('-'*80))
 
   # training using the best parameter
   model, metadata = train(data, best_param['degree'], best_param['reg'], measure_time = True)
 
-  if args.verbose:
+  if args['verbose']:
     print("#  estimated class prior = {:.6f}".format(metadata['theta']))
 
   return model, best_param

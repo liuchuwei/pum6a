@@ -15,13 +15,13 @@ seed = 88888888
 
 [model]
 
-    model_chosen = 'LSDD' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD, DSDD
+    model_chosen = 'puMIL' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD.toml, DSDD
 
 
 [trainer]
 
     trainer_chosen='Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
-    model_chosen='LSDD' # PU-SKC, puMIL, LSDD, DSDD
+    model_chosen='puMIL' # PU-SKC, puMIL, LSDD.toml, DSDD
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
     save_dir = 'result/Annthyroid'
@@ -29,11 +29,11 @@ seed = 88888888
 
     epochs = 1000 # 100, 1000
     batch_size = 224 # 16/16*14=224
-    n_pos = 40  # 500*0.3*0.8**0.10=6
+    n_pos = 6  # 500*0.3*0.8**0.10=6
     freq = 5  # 5% freqency
     early_stopping = 3
 
-    [trainer.lsdd]
+    [trainer.pumil]
     aucplot=false
     np=20
     nu=180

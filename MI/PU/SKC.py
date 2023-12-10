@@ -9,10 +9,10 @@ _SOLVER = 'cvxopt'
 
 
 def train(bags, basis, bdim, theta, r, args):
-  if args.loss == 'double_hinge':
+  if args['loss'] == 'double_hinge':
     return train_dh(bags, basis, bdim, theta, r, args)
 
-  elif args.loss == 'squared':
+  elif args['loss'] == 'squared':
     return train_sl(bags, basis, bdim, theta, r, args)
 
 
