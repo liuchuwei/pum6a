@@ -83,8 +83,8 @@ class baseTrainer(object):
 
             clf = pumil(
               data,
-              50,
-                (len(data)-50),
+              n_pos,
+                (len(data)-n_pos),
               self.config['pumil'])
 
         elif self.config['model_chosen'] == "PU-SKC":

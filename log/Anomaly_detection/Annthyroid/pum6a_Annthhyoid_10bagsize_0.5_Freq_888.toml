@@ -36,7 +36,7 @@ seed = 888
     trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/Annthyroid/pum6a/50'
+    save_dir = 'result/Anomaly_detection/Annthyroid/pum6a/50'
     seed = 888
 
     epochs = 300 # 100, 1000

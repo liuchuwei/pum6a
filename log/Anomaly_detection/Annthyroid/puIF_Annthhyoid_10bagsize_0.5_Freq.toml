@@ -34,12 +34,12 @@ seed = 8
     trainer_chosen='puIF_Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/Annthyroid/puIF/50'
+    save_dir = 'result/Anomaly_detection/Annthyroid/puIF/10'
     seed = 8
 
     epochs = 1000 # 100, 1000
     batch_size = 224 # 16/16*14=224
-    freq = 0.5  # 50% freqency
+    freq = 0.1  # 50% freqency
     early_stopping = 3
 
 
