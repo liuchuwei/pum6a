@@ -66,3 +66,4 @@ def train(bags, s, l, args):
     return a.T.dot(np.exp(- (r(X**2) - 2*X.dot(x.T) + r(x**2).T) / (2*s**2)))
   
   return lambda X: np.max([classifier(x) for x in X])
+

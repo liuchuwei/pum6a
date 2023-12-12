@@ -31,7 +31,7 @@ class RF(object):
         '''
 
         "1.Build hyper-parameter"
-        self.random_grid = self.model_config['randomforest']
+        # self.random_grid = self.model_config['randomforest']
 
         "2.Build RF model"
         self.rf = RandomForestRegressor()

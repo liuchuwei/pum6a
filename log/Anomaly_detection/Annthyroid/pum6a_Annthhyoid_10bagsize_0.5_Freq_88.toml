@@ -1,14 +1,14 @@
-seed = 8
+seed = 88
 
 [dataload]
 
-    dataset = "TIGER"
+    dataset = "Annthyroid"
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2
     confactor = 0.3
     target = 1
-    seed = 8
+    seed = 88
 
 [model]
 
@@ -17,18 +17,18 @@ seed = 8
 
     [model.feature_extractor]
     type = 'linear'
-    n_features = 230
+    n_features = 6
     dropout_rate = 0
-    hidden_neurons = [128] # 2
-    batch_norm = false
+    hidden_neurons = [4] # 4/2
+    batch_norm = true # true/false
     hidden_activation = 'relu'
 
     [model.classifier]
     input = 2
 
     [model.attention]
-    L=128  # Attention model_factory input nodes
-    D=64  # Attention model_factory intermediate nodes
+    L=4  # Attention model_factory input nodes 4/2
+    D=2  # Attention model_factory intermediate nodes 4/2
     K=1  # Attention model_factory output nodes
 
 [trainer]
@@ -36,8 +36,8 @@ seed = 8
     trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/test/pum6a/50'
-    seed = 8
+    save_dir = 'result/Annthyroid/pum6a/50'
+    seed = 88
 
     epochs = 300 # 100, 1000
     batch_size = 16
@@ -47,7 +47,7 @@ seed = 8
     [trainer.optimizer]
 
     opt = 'AdamW'
-    lr = 0.005
+    lr = 0.0025 # 0.0025/0.001
     weight_decay=1e-05
     amsgrad=true
     opt_scheduler='none'

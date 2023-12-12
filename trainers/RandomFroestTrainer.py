@@ -66,7 +66,8 @@ class RF_Trainer(object):
         train_bag_label = torch.stack([self.bag.labels[item].max() for item in self.train_idx[idx]]).float()
         val_bag_label = torch.stack([self.bag.labels[item].max() for item in self.val_idx[idx]]).float()
         total_label = torch.concat([train_bag_label, val_bag_label])
-        n_pos = self.config['n_pos']
+        n_pos = (self.config['freq'] * torch.sum(total_label)).int().numpy()
+        self.config['n_pos'] = n_pos
         pos_idx = np.random.choice(torch.where(total_label == 1)[0], size=n_pos, replace=False)
         y = torch.zeros(len(total_label))
         y[pos_idx] = 1
@@ -78,11 +79,11 @@ class RF_Trainer(object):
         X = torch.concat(X)
         Y = torch.concat(Y)
 
-        clf = RandomizedSearchCV(estimator=self.init_model.rf,
-                                       param_distributions=self.init_model.random_grid,
-                                       n_iter=100, cv=3, verbose=2,
-                                       random_state=666, n_jobs=-1)
-        # clf = self.init_model.rf
+        # clf = RandomizedSearchCV(estimator=self.init_model.rf,
+        #                                param_distributions=self.init_model.random_grid,
+        #                                n_iter=100, cv=3, verbose=2,
+        #                                random_state=666, n_jobs=-1)
+        clf = self.init_model.rf
 
         clf.fit(X, Y)
 

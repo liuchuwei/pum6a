@@ -238,7 +238,7 @@ class Bags(object):
             data = self.load_bag('dataset/RealWord/Fox.csv')
             self.labels = [torch.Tensor(item['labels']) == self.target for item in data]
             self.bags = [torch.Tensor(np.array(item['instances'])) for item in data]
-
+            self.bags = [torch.where(torch.isnan(a), torch.full_like(a, 0), a) for a in self.bags]
 
         elif self.dataset == "TIGER":
 
@@ -371,30 +371,6 @@ class Bags(object):
             self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
-        elif self.dataset == "Landsat":
-
-            data = np.load("dataset/ADBench/19_landsat.npz", allow_pickle=True)
-            X_inst, y_inst = data['X'], data['y']
-            X_inst = self.zscore_normalize(X_inst)
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
-
-        elif self.dataset == "Letter":
-
-            data = np.load("dataset/ADBench/20_letter.npz", allow_pickle=True)
-            X_inst, y_inst = data['X'], data['y']
-            X_inst = self.zscore_normalize(X_inst)
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
-
         elif self.dataset == "Mammog":
 
             data = np.load("dataset/ADBench/23_mammography.npz", allow_pickle=True)
@@ -423,7 +399,7 @@ class Bags(object):
 
             data = np.load("dataset/ADBench/26_optdigits.npz", allow_pickle=True)
             X_inst, y_inst = data['X'], data['y']
-            X_inst = self.zscore_normalize(X_inst)
+            # X_inst = self.zscore_normalize(X_inst)
 
             self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
@@ -467,30 +443,6 @@ class Bags(object):
             self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
-        elif self.dataset == "Skin":
-
-            data = np.load("dataset/ADBench/33_skin.npz", allow_pickle=True)
-            X_inst, y_inst = data['X'], data['y']
-            X_inst = self.zscore_normalize(X_inst)
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
-
-        elif self.dataset == "Pima":
-
-            data = np.load("dataset/ADBench/29_Pima.npz", allow_pickle=True)
-            X_inst, y_inst = data['X'], data['y']
-            X_inst = self.zscore_normalize(X_inst)
-
-            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
-
-            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
-                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
-
         elif self.dataset == "Thyroid":
 
             data = np.load("dataset/ADBench/38_thyroid.npz", allow_pickle=True)
@@ -503,9 +455,10 @@ class Bags(object):
             self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
-        elif self.dataset == "Vowels":
 
-            data = np.load("dataset/ADBench/40_vowels.npz", allow_pickle=True)
+        elif self.dataset == "Cover":
+
+            data = np.load("dataset/ADBench/10_cover.npz", allow_pickle=True)
             X_inst, y_inst = data['X'], data['y']
             X_inst = self.zscore_normalize(X_inst)
 
@@ -515,9 +468,76 @@ class Bags(object):
             self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
 
-        elif self.dataset == "Wilt":
+        elif self.dataset == "Hepatitis":
 
-            data = np.load("dataset/ADBench/44_Wilt.npz", allow_pickle=True)
+            data = np.load("dataset/ADBench/15_Hepatitis.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Donor":
+
+            data = np.load("dataset/ADBench/11_donors.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Backdoor":
+
+            data = np.load("dataset/ADBench/3_backdoor.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            # X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
+        elif self.dataset == "Satimage":
+
+            data = np.load("dataset/ADBench/31_satimage-2.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Yeast":
+
+            data = np.load("dataset/ADBench/47_yeast.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Fraud":
+
+            data = np.load("dataset/ADBench/13_fraud.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            # X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "WDBC":
+
+            data = np.load("dataset/ADBench/43_WDBC.npz", allow_pickle=True)
             X_inst, y_inst = data['X'], data['y']
             X_inst = self.zscore_normalize(X_inst)
 
@@ -568,6 +588,9 @@ class Bags(object):
 
                 if a_bag_length < 1:
                     a_bag_length = 1
+
+                if n_bag_length < 1:
+                    n_bag_length = 0
 
                 n_indices = torch.LongTensor(self.r.randint(0, len(self.n_inst.y), n_bag_length))
                 a_indices = torch.LongTensor(self.r.randint(0, len(self.a_inst.y), a_bag_length))

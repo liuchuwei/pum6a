@@ -1,0 +1,40 @@
+seed = 8
+
+[dataload]
+
+    dataset = "Annthyroid"
+    num_bag = 500
+    mean_nbag_length = 10
+    var_nbag_length = 2
+    mean_abag_length = 4
+    var_abag_length = 1
+    confactor = 0.3
+    target = 1
+    seed = 8
+
+
+[model]
+
+    model_chosen = 'puMIL' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD.toml, DSDD
+
+
+[trainer]
+
+    trainer_chosen='Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    model_chosen='puMIL' # PU-SKC, puMIL, LSDD.toml, DSDD
+    device = 'cuda'
+    n_splits = 5    # 5-fold-cross-validataion
+    save_dir = 'result/Annthyroid/puMIL/50'
+    seed = 8
+
+    epochs = 1000 # 100, 1000
+    batch_size = 224 # 16/16*14=224
+    freq = 0.5  # 5% freqency
+    early_stopping = 3
+
+    [trainer.pumil]
+    aucplot=false
+    np=86 # 144*0.6 ~ 86
+    nu=58 # 356*0.6 ~ 58
+    prior=0.3
+    verbose=false

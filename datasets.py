@@ -26,41 +26,43 @@ elif dataset == "Birds_brown_creeper":
     pass
 elif dataset == "Annthyroid":  # 500 bags, 144 positive bags, 6 features
     pass
-elif dataset == "PageBlock":
+elif dataset == "PageBlock": # 500 bags, 136 positive bags, 10 features
     pass
-elif dataset == "SpamBase":
+elif dataset == "SpamBase": # 500 bags, 136 positive bags, 57 features
     pass
-elif dataset == "Waveform":
+elif dataset == "Waveform": # 500 bags, 136 positive bags, 21 features
     pass
-elif dataset == "Cardio":
+elif dataset == "Cardio": # 500 bags, 136 positive bags, 21 features
     pass
-elif dataset == "Cardiotoc":
+elif dataset == "Cardiotoc": # 500 bags, 136 positive bags, 21 features
     pass
-elif dataset == "Internet":
+elif dataset == "Internet": # 500 bags, 136 positive bags, 1555 features
     pass
-elif dataset == "Landsat":
+elif dataset == "Mammog": # 500 bags, 136 positive bags, 6 features
     pass
-elif dataset == "Letter":
+elif dataset == "Musk": # 500 bags, 136 positive bags, 166 features
     pass
-elif dataset == "Mammog":
+elif dataset == "Optdigits": # 500 bags, 136 positive bags, 64 features
     pass
-elif dataset == "Musk":
+elif dataset == "Pendigits": # 500 bags, 136 positive bags, 16 features
     pass
-elif dataset == "Optdigits":
+elif dataset == "Satellite": # 500 bags, 136 positive bags, 36 features
     pass
-elif dataset == "Pendigits":
+elif dataset == "Shuttle": # 500 bags, 136 positive bags, 9 features
     pass
-elif dataset == "Satellite":
+elif dataset == "Thyroid": # 500 bags, 136 positive bags, 6 features
     pass
-elif dataset == "Shuttle":
+elif dataset == "Cover": # 500 bags, 136 positive bags, 5 features
     pass
-elif dataset == "Skin":
+elif dataset == "Hepatitis": # 500 bags, 136 positive bags, 5 features
     pass
-elif dataset == "Pima":
+elif dataset == "Backdoor": # 500 bags, 136 positive bags, 5 features
     pass
-elif dataset == "Thyroid":
+elif dataset == "Satimage": # 500 bags, 136 positive bags, 5 features
     pass
-elif dataset == "Vowels":
+elif dataset == "Fraud": # 500 bags, 136 positive bags, 5 features
     pass
-elif dataset == "Wilt":
+elif dataset == "WBC": # 500 bags, 136 positive bags, 5 features
+    pass
+elif dataset == "WDBC": # 500 bags, 136 positive bags, 5 features
     pass
