@@ -2,7 +2,7 @@ seed = 8
 
 [dataload]
 
-    dataset = "PageBlock"
+    dataset = "SpamBase"
     num_bag = 500
     mean_nbag_length = 10
     var_nbag_length = 2

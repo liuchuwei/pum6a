@@ -41,6 +41,7 @@ seed = 8
     batch_size = 224 # 16/16*14=224
     freq = 0.1  # 50% freqency
     early_stopping = 3
+    verbose = false
 
 
     [trainer.optimizer]

@@ -112,10 +112,11 @@ class adanTrainer(object):
 
             bag_scores[bag_idx] = torch.stack([item[0] for item in data_inst])
 
-            if batch % 5 == 0:
-                loss, current = loss.item(), (batch + 1) * self.config['batch_size']
-                print(f"likehood_loss_p: {loss:>7f}  "
-                      f"[{current:>5d}/{size:>5d}]")
+            if self.config['verbose']:
+                if batch % 5 == 0:
+                    loss, current = loss.item(), (batch + 1) * self.config['batch_size']
+                    print(f"likehood_loss_p: {loss:>7f}  "
+                          f"[{current:>5d}/{size:>5d}]")
 
         self.refreshNegLabel(bag_scores)
 
@@ -188,11 +189,16 @@ class adanTrainer(object):
 
         best = 88888888
         for t in range(self.config['epochs']):
+            if self.config['verbose']:
 
-            print(f"Epoch {t + 1}\n-------------------------------")
+                print(f"Epoch {t + 1}\n-------------------------------")
+
             self.train_epoch()
             cost = self.val_epoch()
-            print(f"val_bag_loss: {(cost):>0.1f}")
+
+            if self.config['verbose']:
+
+                print(f"val_bag_loss: {(cost):>0.1f}")
 
             if cost < best:
                 best = cost

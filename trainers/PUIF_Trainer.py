@@ -67,10 +67,11 @@ class puIF_Trainer(object):
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            if batch % 5 == 0:
-                loss, current = loss.item(), (batch + 1) * self.config['batch_size']
-                print(f"likehood_loss_p: {loss:>7f}  "
-                      f"[{current:>5d}/{size:>5d}]")
+            if self.config['verbose']:
+                if batch % 5 == 0:
+                    loss, current = loss.item(), (batch + 1) * self.config['batch_size']
+                    print(f"likehood_loss_p: {loss:>7f}  "
+                          f"[{current:>5d}/{size:>5d}]")
 
         loss_sum /= (batch+1)
 
@@ -132,9 +133,12 @@ class puIF_Trainer(object):
         best = 88888888
         for t in range(self.config['epochs']):
 
-            print(f"Epoch {t + 1}\n-------------------------------")
+            if self.config['verbose']:
+                print(f"Epoch {t + 1}\n-------------------------------")
             cost = self.train_epoch()
-            print(f"val_bag_loss: {(cost):>0.1f}")
+
+            if self.config['verbose']:
+                print(f"val_bag_loss: {(cost):>0.1f}")
 
             if cost < best:
                 best = cost

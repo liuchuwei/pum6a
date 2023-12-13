@@ -30,13 +30,14 @@ seed = 8
     trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/Cardio/puma/50'
+    save_dir = 'result/Anomaly_detection/Cardio/puma/50'
     seed = 8
 
     epochs = 300 # 100, 1000
     batch_size = 16
     freq = 0.5  # 50% freqency
     early_stopping = 3
+    verbose = false
 
     [trainer.optimizer]
 
