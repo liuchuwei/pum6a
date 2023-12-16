@@ -56,6 +56,8 @@ elif dataset == "Cover": # 500 bags, 136 positive bags, 5 features
     pass
 elif dataset == "Hepatitis": # 500 bags, 136 positive bags, 5 features
     pass
+elif dataset == "Donor": # 500 bags, 136 positive bags, 5 features
+    pass
 elif dataset == "Backdoor": # 500 bags, 136 positive bags, 5 features
     pass
 elif dataset == "Satimage": # 500 bags, 136 positive bags, 5 features
@@ -65,4 +67,8 @@ elif dataset == "Fraud": # 500 bags, 136 positive bags, 5 features
 elif dataset == "WBC": # 500 bags, 136 positive bags, 5 features
     pass
 elif dataset == "WDBC": # 500 bags, 136 positive bags, 5 features
+    pass
+elif dataset == "ALOI": # 500 bags, 136 positive bags, 5 features
+    pass
+elif dataset == "Campaign": # 500 bags, 136 positive bags, 5 features
     pass

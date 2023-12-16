@@ -1,0 +1,54 @@
+seed = 8
+
+[dataload]
+
+    dataset = "Campaign"
+    num_bag = 500
+    mean_nbag_length = 10
+    var_nbag_length = 2
+    confactor = 0.3
+    target = 1
+    seed = 8
+
+[model]
+
+    model_chosen = 'pum6a' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD.toml, DSDD
+    device = 'cuda'
+
+    [model.feature_extractor]
+    type = 'linear'
+    n_features = 62
+    dropout_rate = 0
+    hidden_neurons = [60, 30] # 2
+    batch_norm = false
+    hidden_activation = 'relu'
+
+    [model.classifier]
+    input = 2
+
+    [model.attention]
+    L=30  # Attention model_factory input nodes
+    D=15  # Attention model_factory intermediate nodes
+    K=1  # Attention model_factory output nodes
+
+[trainer]
+
+    trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    device = 'cuda'
+    n_splits = 5    # 5-fold-cross-validataion
+    save_dir = 'result/Anomaly_detection/Campaign/pum6a/50'
+    seed = 8
+
+    epochs = 300 # 100, 1000
+    batch_size = 16
+    freq = 0.5  # 50% freqency
+    early_stopping = 3
+    verbose = false
+
+    [trainer.optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0025
+    weight_decay=1e-05
+    amsgrad=true
+    opt_scheduler='none'

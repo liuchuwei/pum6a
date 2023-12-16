@@ -1,0 +1,53 @@
+seed = 88888
+
+[dataload]
+
+    dataset = "Mammog"
+    num_bag = 500
+    mean_nbag_length = 10
+    var_nbag_length = 2
+    mean_abag_length = 4
+    var_abag_length = 1
+    confactor = 0.3
+    target = 1
+    seed = 88888
+
+[model]
+
+    model_chosen = 'puIF' # pum6a, puma, iAE, puIF, RF, PU-SKC, puMIL, LSDD.toml, DSDD
+    device = 'cuda'
+
+    [model.feature_extractor]
+    type = 'linear'
+    n_features = 1555
+    dropout_rate = 0
+    hidden_neurons = [1] #
+    batch_norm = false
+    hidden_activation = 'relu'
+
+    [model.isoForest]
+    contamination=0.30 # mean_abag_length/mean_nbag_length
+
+
+[trainer]
+
+    trainer_chosen='puIF_Trainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
+    device = 'cuda'
+    n_splits = 5    # 5-fold-cross-validataion
+    save_dir = 'result/Anomaly_detection/Mammog/puIF/50'
+    seed = 88888
+
+    epochs = 1000 # 100, 1000
+    batch_size = 224 # 16/16*14=224
+    freq = 0.5  # 50% freqency
+    early_stopping = 3
+    verbose = false
+
+
+    [trainer.optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0025 # 0.0001
+    weight_decay=1e-05
+    amsgrad=true
+    opt_scheduler='none'

@@ -535,9 +535,87 @@ class Bags(object):
 
             self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
                                        target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "WBC":
+
+            data = np.load("dataset/ADBench/42_WBC.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
         elif self.dataset == "WDBC":
 
             data = np.load("dataset/ADBench/43_WDBC.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+
+        elif self.dataset == "ALOI":
+
+            data = np.load("dataset/ADBench/1_ALOI.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            # X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Campaign":
+
+            data = np.load("dataset/ADBench/5_campaign.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Celeba":
+
+            data = np.load("dataset/ADBench/8_celeba.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Census":
+
+            data = np.load("dataset/ADBench/9_census.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Landsat":
+
+            data = np.load("dataset/ADBench/19_landsat.npz", allow_pickle=True)
+            X_inst, y_inst = data['X'], data['y']
+            # X_inst = self.zscore_normalize(X_inst)
+
+            self.n_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst != self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst != self.target)]).float())
+
+            self.a_inst = storeDataset(data=torch.Tensor(X_inst[np.where(y_inst == self.target)]).float(),
+                                       target=torch.Tensor(y_inst[np.where(y_inst == self.target)]).float())
+        elif self.dataset == "Wilt":
+
+            data = np.load("dataset/ADBench/44_Wilt.npz", allow_pickle=True)
             X_inst, y_inst = data['X'], data['y']
             X_inst = self.zscore_normalize(X_inst)
 
