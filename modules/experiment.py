@@ -7,6 +7,7 @@ import toml
 from utils.train_utils import set_seed
 from utils.io_utils import LoadBag, LoadModel, LoadTrainer
 
+import torch
 def argparser():
     parser = argparse.ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
@@ -29,6 +30,9 @@ def main(args):
 
     "3.load dataset"
     bag = LoadBag(config['dataload'])
+    # if config['dataload']['dataset'] == "MNIST" and config['model']['model_chosen'] in ['RF', 'puIF', "puma", "iAE"]:
+    tmp = [torch.flatten(item, start_dim=1) for item in bag.bags]
+    bag.bags = tmp
 
     "4.load model"
     if not config['model']['model_chosen'] in ['PU-SKC', 'puMIL', 'LSDD', 'DSDD']:
