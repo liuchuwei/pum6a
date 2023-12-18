@@ -1,4 +1,4 @@
-seed = 8888
+seed = 88888
 
 [dataload]
 
@@ -8,7 +8,7 @@ seed = 8888
     var_nbag_length = 2
     confactor = 0.3
     target = 9
-    seed = 8888
+    seed = 88888
 
 [model]
 
@@ -43,19 +43,19 @@ seed = 8888
     trainer_chosen='adanTrainer' # adanTrainer, puIF_Trainer, RF_Trainer, Trainer
     device = 'cuda'
     n_splits = 5    # 5-fold-cross-validataion
-    save_dir = 'result/MNIST/pum6a'
-    seed = 8888
+    save_dir = 'result/MNIST/pum6a/50'
+    seed = 88888
 
     epochs = 300 # 100, 1000
     batch_size = 16
     freq = 0.5  # 50% freqency
     early_stopping = 3
-    verbose = true
+    verbose = false
 
     [trainer.optimizer]
 
     opt = 'AdamW'
-    lr = 0.0005
+    lr = 0.001
     weight_decay=1e-05
     amsgrad=true
     opt_scheduler='none'

@@ -177,6 +177,9 @@ class adanTrainer(object):
         s[pos_idx] = 1
 
         self.train_bag_label = s[:len(train_bag_label)]
+
+        pos_unlabel = torch.where(train_bag_label != self.train_bag_label)
+        self.pos_unlabel_index = self.train_idx[idx][pos_unlabel]
         self.val_bag_label = s[len(train_bag_label):]
 
         self.initNegLabel()
@@ -188,6 +191,7 @@ class adanTrainer(object):
                                                         config=self.config['optimizer'])
 
         best = 88888888
+        patience = 0
         for t in range(self.config['epochs']):
             if self.config['verbose']:
 
@@ -238,5 +242,15 @@ class adanTrainer(object):
             self.expriment(idx)
 
 
+    def run_one(self):
 
+        "1. Split dataset: 5-fold-cross-validation"
+        self.train_idx, self.val_idx, self.test_idx = SplitBag(n_splits=self.n_splits,
+                                                               bag_labels=self.bag.labels)
+
+        "2. Save initial model"
+        self.saveInit()
+
+        "3. train and save model"
+        self.expriment(1)
 
