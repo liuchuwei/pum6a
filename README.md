@@ -33,7 +33,7 @@
    ```
 2.Install conda environment
    ```shell
-   conda env create -f caNano.yaml
+   conda env create -f pum6a.yaml
    conda env create -f tombo.yaml
    ```
 3.prepare tookit: 
@@ -41,9 +41,18 @@
 check and modify the tookit.py file (in 'utils' directory).
     
 ## Usage
+
+### Experiment
+Experiment of pum6a framework for different positive and unlable bags datasets.
+
+```shell
+python run.py experiment --config $*.toml
+```
+
+### m6A modification detection
 1.Basecalling
    ```shell
-   python 01.basecalling.py -i $fast5 -o $out
+   python process/01.basecalling.py -i $fast5 -o $out
    ```
 2.Resguiggle
 
@@ -51,13 +60,13 @@ preprocess
 
    ```shell
    conda activate tombo
-   python 02.resquiggle_pre.py -f $fast5 -o $out
+   python process/02.resquiggle_pre.py -f $fast5 -o $out
    ```
 annotate_raw_with_fastqs
 
    ```shell
    cat *.fastq > merge.fastq
-   python 03.resquiggle.py preprocess annotate_raw_with_fastqs \
+   python process/03.resquiggle.py preprocess annotate_raw_with_fastqs \
    --fast5-basedir $single \
    --fastq-filenames $merge_fastq \
    --overwrite \
@@ -65,7 +74,7 @@ annotate_raw_with_fastqs
    ```
 resquiggling
    ```shell
-    python 03.resquiggle.py resquiggle $fast5 $reference \
+    python process/3.resquiggle.py resquiggle $fast5 $reference \
     --rna \
     --corrected-group RawGenomeCorrected_000 \
     --basecall-group Basecall_1D_000 \
@@ -77,7 +86,7 @@ resquiggling
 
 3.Minimap
    ```shell
-   python 04.minimap.py -i <directory of fastq files> -o <output directory> -r <path of reference>
+   python process/04.minimap.py -i <directory of fastq files> -o <output directory> -r <path of reference>
    ```
 
 4.m6a detection
@@ -91,3 +100,16 @@ resquiggling
    ```shell
    python run.py preprocess --single $single_fast5 -o $output -g $genome.fa -r $transcript.fa -i $gene2transcripts.txt -b $bam
    ```
+
+4.3 train/load model
+
+4.4 predict
+
+
+## License
+Distributed under the GPL-2.0 License License. See LICENSE for more information.
+
+## Contact
+liuchw3@mail2.sysu.edu.cn
+
+## Reference
