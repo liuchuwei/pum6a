@@ -2,7 +2,10 @@
 # coding=utf-8
 import argparse
 from argparse import ArgumentDefaultsHelpFormatter
+import toml
 
+from utils.train_utils import set_seed
+from utils.io_utils import LoadNanoBags
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -10,8 +13,24 @@ def argparser():
         add_help=False
     )
 
+    parser.add_argument("--config",
+                        help='Path to experiment config file.',
+                        required=True)
+
     return parser
 
 
 def main(args):
-    pass
+
+    "1.load config"
+    config = toml.load(args.config)
+
+    "2.set seed"
+    set_seed(config['seed'])
+
+    "3.load dataset"
+    bag = LoadNanoBags(config['dataload'])
+
+    "4.load model"
+
+    "5.train model"

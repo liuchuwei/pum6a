@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="zdj@101.33.215.247:6000 password (6)" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="zdj@101.33.215.247:6000 password (7)" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="zdj@101.33.215.247:6000 password">
         <serverdata>
@@ -38,6 +38,13 @@
         </serverdata>
       </paths>
       <paths name="zdj@101.33.215.247:6000 password (6)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/zdj/桌面/data/pum6a" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="zdj@101.33.215.247:6000 password (7)">
         <serverdata>
           <mappings>
             <mapping deploy="/home/zdj/桌面/data/pum6a" local="$PROJECT_DIR$" />

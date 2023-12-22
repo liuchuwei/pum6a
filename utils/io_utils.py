@@ -13,6 +13,289 @@ from trainers.AdanTrainer import adanTrainer
 from trainers.PUIF_Trainer import puIF_Trainer
 from trainers.BaseTrainer import baseTrainer
 
+import numpy as np
+import random
+from torch.utils.data import Dataset
+
+from collections import defaultdict
+
+#####################################
+#
+# Load Nanopore Bags
+#
+#####################################
+class nanoBag(Dataset):
+
+    """
+    Torch dataset object of nanopore bag dataset
+    """
+    def __init__(self, config: Dict=None,
+                 feature=None,
+                 id=None,
+                 sitedict: Dict=None,
+                 mod=None):
+
+        r'''
+        Initialization function for the class
+
+            Args:
+                feature : read feature data.
+                id : read information.
+                sitedict (dict): A dictionary containing site configurations.
+                config (dict): A dictionary containing dataset configurations.
+                mod: Ground truth of site modification
+
+            Returns:
+                None
+
+            Raises:
+                ValueError: Raises an exception when some of the listed arguments do not follow the allowed conventions
+        '''
+        super(nanoBag, self).__init__()
+
+        self.config = config
+        self.feature = feature
+        self.id = id
+        self.mod = mod
+        self.sitedict = self.TailorSiteDict(sitedict)
+        self.__getitem__(0)
+
+    def TailorSiteDict(self, sitedict):
+        """
+        Instance method for removing sites with reads less than min_reads
+        """
+
+        for key in list(sitedict.keys()):
+            item = sitedict[key]
+            if len(item) < self.config['min_read']:
+                sitedict.pop(key)
+
+        self.keys = list(sitedict.keys())
+
+        return sitedict
+
+    def __getitem__(self, idx: int):
+        '''
+        Instance method to access features from reads belonging to the idx-th site in data_info attribute
+        :param item:
+        :return:
+        '''
+
+        id = self.keys[idx]
+        mod = self.mod[id]
+
+        reads = self.sitedict[id]
+        feature = self.feature[reads, :]
+        current_feature = feature[:, :20]
+        site_feature = feature[0, 20:]
+
+        current_feature = torch.tensor(current_feature, dtype=torch.float32)
+        site_feature = torch.tensor(site_feature, dtype=torch.float32)
+
+        return current_feature, site_feature, mod
+
+    def __len__(self):
+        return len(self.sitedict)
+
+class GenNanoBags(object):
+
+    r'''
+    An object class for generating nanopore bag dataset
+    '''
+
+    def __init__(self, config: Dict):
+
+        r'''
+        Initialization function for the class
+
+            Args:
+                config (dict): A dictionary containing dataset configurations.
+
+            Returns:
+                None
+
+            Raises:
+                ValueError: Raises an exception when some of the listed arguments do not follow the allowed conventions
+        '''
+
+        self.config = config
+        self.loaddata()
+
+    def extractCurrentAlign(self, item):
+
+        """
+        Instance method to load read information (current, alignment, read information)
+        """
+
+        # if "AAACA" == motif:
+        # id
+        id = '|'.join([item[0], item[2], item[8], item[9]])
+
+        # current signal
+        cur_mean = [float(item) for item in item[3].split("|")]
+        cur_std = [float(item) for item in item[4].split("|")]
+        cur_median = [float(item) for item in item[5].split("|")]
+        cur_length = [int(item) for item in item[6].split("|")]
+        cur = np.stack([cur_mean, cur_std, cur_median, cur_length])
+
+        # matching
+        # base, strand, cov, q_mean, q_median, q_std, mis, ins, deli = ele[8].split("|")
+        eventalign = item[10].split("|")
+        site = eventalign[0] + "|" + eventalign[1]
+        mat = ",".join(eventalign[2:]).split(",")
+        mat = np.array([float(item) for item in mat])
+
+        return cur, mat, id + "|" + site
+
+    def preprocess(self):
+
+        """
+        Instance method to load read information
+        """
+
+        "1.loading groundtruth"
+        fl = self.config['ground_truth']
+        ground_truth = []
+        for i in open(fl, "r"):
+
+            if i.startswith("#"):
+                continue
+
+            ele = i.rstrip().split()
+            ground_truth.append("|".join(ele))
+
+        self.gt = ground_truth
+
+        "2.loading read feature"
+        cur_info = []
+        mat_info = []
+        read_info = []
+        path = self.config['signal']
+        motif = self.config['motif']
+
+        for i in open(path, "r"):
+            ele = i.rstrip().split()
+            if ele[2] in motif:
+
+                cur, mat, ids = self.extractCurrentAlign(ele)
+                cur_info.append(cur)
+                mat_info.append(mat)
+                read_info.append(ids)
+
+
+        return {'read':read_info, 'current':cur_info, 'matching':mat_info}
+
+
+
+    def splitData(self):
+
+        """
+        Instance method for normalizing 、splitting and building train、 validate and test dataset
+        """
+
+        X = np.concatenate([np.stack([np.concatenate(item) for item in self.dl['current']]), np.stack(self.dl['matching'])], axis=1)
+        mean_val = np.mean(X, axis=0)
+        std_val = np.std(X, axis=0)
+        X_N = (X - mean_val) / std_val
+
+        # normalize length and quality
+        X[:, 15:25] = X_N[:, 15:25]
+
+        id = np.array([item for item in self.dl['read']])
+
+        # split for train, val and test dataset
+        indices = random.sample(range(0, len(id)), len(id))
+
+        valid_size = int(0.2 * len(id))
+        train_size = int(0.6 * len(id))
+
+        train_indices = indices[:train_size]
+        val_indices = indices[train_size:(train_size+valid_size)]
+        test_indices = indices[(train_size+valid_size):]
+
+        self.train = {"id":id[train_indices], "feature": X[train_indices,]}
+        self.val = {"id":id[val_indices], "feature": X[val_indices,]}
+        self.test = {"id":id[test_indices], "feature": X[test_indices,]}
+
+    def buildNanoBags(self, data: Dict):
+
+        """
+        Instance method for building build NanoBags dataset
+
+            Args:
+                data(dict): data dictionary containing read feature and read id
+
+            Return:
+                bags: NanoBags dataset
+        """
+
+        site_dict = defaultdict(dict)
+        id = data['id']
+        feature = data['feature']
+        for index, item in enumerate(id):
+            site = "|".join(item.split("|")[4:7]) + "|" + item.split("|")[3]
+            if not site_dict[site]:
+                site_dict[site] = [index]
+            else:
+                site_dict[site].append(index)
+
+        y_tmp = [item.split("|") for item in list(site_dict.keys())]
+        for item in y_tmp:
+            del item[-1]
+        y_tmp = ["|".join(item) for item in y_tmp]
+
+        y_gt = [item.split("|") for item in self.gt]
+        for item in y_gt:
+            del item[2]
+        y_gt = ["|".join(item) for item in y_gt]
+        Y = [item in y_gt for item in y_tmp]
+        mod_key = list(site_dict.keys())
+        mod = {}
+        for idx, item in enumerate(Y):
+            mod[mod_key[idx]]=item
+
+        bag = nanoBag(feature=feature, sitedict=site_dict, config=self.config, id=id, mod=mod)
+
+        return bag
+
+
+    def loaddata(self):
+
+        print("loading and preprocessing data...")
+        self.dl = self.preprocess()
+        print("finish!")
+
+        print("normalize data and split data for training、 validation and testing...")
+        self.splitData()
+
+        print("building nanoBags dataset...")
+        self.trainBags = self.buildNanoBags(self.train)
+        self.valBags = self.buildNanoBags(self.val)
+        self.testBags = self.buildNanoBags(self.test)
+
+def LoadNanoBags(config: Dict):
+
+    """
+    Method to load nanopore dataset and package it into site bag dataset
+
+        Args:
+            config (dict): A dictionary containing dataset configurations.
+
+        Return:
+            bag: A bag object containing site bag dataset
+    """
+
+    bag = GenNanoBags(config)
+
+    return bag
+
+
+#####################################
+#
+# Load Experiment Bags
+#
+#####################################
+
 def LoadBag(config: Dict):
 
     """

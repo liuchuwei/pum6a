@@ -1,0 +1,8 @@
+seed = 88888888
+
+[dataload]
+
+    signal="result/caNano/HEK293T_1/wt.feature.tsv"
+    ground_truth="dataset/Nano/HEK293T_GroundTruth.txt"
+    motif="AAACA" #  "AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"
+    min_read=1
