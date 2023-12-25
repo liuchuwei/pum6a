@@ -1,0 +1,3 @@
+site="result/pum6a/293T_4_site.csv"
+groundtruth="dataset/Nano/HEK293T_GroundTruth.txt"
+cpu=10

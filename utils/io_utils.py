@@ -86,7 +86,8 @@ class nanoBag(Dataset):
                 sitedict.pop(key)
 
         self.keys = list(sitedict.keys())
-        self.Keymod()
+        if not self.config['inference']:
+            self.Keymod()
 
         return sitedict
 
@@ -166,21 +167,25 @@ class GenNanoBags(object):
         """
 
         "1.loading groundtruth"
-        fl = self.config['ground_truth']
-        ground_truth = []
-        for i in open(fl, "r"):
+        if self.config['inference']:
+            self.gt = None
 
-            if i.startswith("#"):
-                continue
+        else:
+            fl = self.config['ground_truth']
+            ground_truth = []
+            for i in open(fl, "r"):
 
-            ele = i.rstrip().split()
-            ground_truth.append("|".join(ele))
+                if i.startswith("#"):
+                    continue
+
+                ele = i.rstrip().split()
+                ground_truth.append("|".join(ele))
 
 
-        y_gt = [item.split("|") for item in ground_truth]
-        for item in y_gt:
-            del item[2]
-        self.gt = ["|".join(item) for item in y_gt]
+            y_gt = [item.split("|") for item in ground_truth]
+            for item in y_gt:
+                del item[2]
+            self.gt = ["|".join(item) for item in y_gt]
 
         "2.loading read feature"
         cur_info = []
@@ -221,19 +226,23 @@ class GenNanoBags(object):
         id = np.array([item for item in self.dl['read']])
 
         # split for train, val and test dataset
-        random.seed(88888888)
-        indices = random.sample(range(0, len(id)), len(id))
+        if self.config['inference']:
+            self.bag = {"id":id, "feature": X}
 
-        valid_size = int(0.2 * len(id))
-        train_size = int(0.6 * len(id))
+        else:
+            random.seed(88888888)
+            indices = random.sample(range(0, len(id)), len(id))
 
-        train_indices = indices[:train_size]
-        val_indices = indices[train_size:(train_size+valid_size)]
-        test_indices = indices[(train_size+valid_size):]
+            valid_size = int(0.2 * len(id))
+            train_size = int(0.6 * len(id))
 
-        self.train = {"id":id[train_indices], "feature": X[train_indices,]}
-        self.val = {"id":id[val_indices], "feature": X[val_indices,]}
-        self.test = {"id":id[test_indices], "feature": X[test_indices,]}
+            train_indices = indices[:train_size]
+            val_indices = indices[train_size:(train_size+valid_size)]
+            test_indices = indices[(train_size+valid_size):]
+
+            self.train = {"id":id[train_indices], "feature": X[train_indices,]}
+            self.val = {"id":id[val_indices], "feature": X[val_indices,]}
+            self.test = {"id":id[test_indices], "feature": X[test_indices,]}
 
     def buildNanoBags(self, data: Dict):
 
@@ -257,6 +266,7 @@ class GenNanoBags(object):
             else:
                 site_dict[site].append(index)
 
+
         bag = nanoBag(feature=feature, sitedict=site_dict, config=self.config, id=id, mod=self.gt)
 
         return bag
@@ -268,13 +278,16 @@ class GenNanoBags(object):
         self.dl = self.preprocess()
         print("finish!")
 
-        print("normalize data and split data for training、 validation and testing...")
+        print("normalize and reshape data...")
         self.splitData()
 
         print("building nanoBags dataset...")
-        self.trainBags = self.buildNanoBags(self.train)
-        self.valBags = self.buildNanoBags(self.val)
-        self.testBags = self.buildNanoBags(self.test)
+        if self.config['inference']:
+            self.Bags = self.buildNanoBags(self.bag)
+        else:
+            self.trainBags = self.buildNanoBags(self.train)
+            self.valBags = self.buildNanoBags(self.val)
+            self.testBags = self.buildNanoBags(self.test)
 
 def LoadNanoBags(config: Dict):
 
