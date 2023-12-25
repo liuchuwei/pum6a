@@ -1,12 +1,14 @@
 import torch
 
 from model_factory.PUM6A import pum6a
+from model_factory.nano_PUM6a import Nanopum6a
 from model_factory.PUMA import puma
 from model_factory.IAE import iAE
 from model_factory.PUIF import puIF
 from model_factory.RandomForest import RF
 from typing import *
 
+from trainers.NanoTrainer import nanoTrainer
 from trainers.RandomFroestTrainer import RF_Trainer
 from utils.bag_utils import Bags
 from trainers.AdanTrainer import adanTrainer
@@ -58,7 +60,20 @@ class nanoBag(Dataset):
         self.id = id
         self.mod = mod
         self.sitedict = self.TailorSiteDict(sitedict)
-        self.__getitem__(0)
+        # self.__getitem__(0)
+
+    def Keymod(self):
+
+        """
+        Instance method to obtain key mod
+        """
+
+        y_tmp = [item.split("|") for item in self.keys]
+        for item in y_tmp:
+            del item[-1]
+        y_tmp = ["|".join(item) for item in y_tmp]
+
+        self.keys_mod = torch.tensor([item in self.mod for item in y_tmp]).float()
 
     def TailorSiteDict(self, sitedict):
         """
@@ -71,6 +86,7 @@ class nanoBag(Dataset):
                 sitedict.pop(key)
 
         self.keys = list(sitedict.keys())
+        self.Keymod()
 
         return sitedict
 
@@ -82,17 +98,13 @@ class nanoBag(Dataset):
         '''
 
         id = self.keys[idx]
-        mod = self.mod[id]
 
         reads = self.sitedict[id]
-        feature = self.feature[reads, :]
-        current_feature = feature[:, :20]
-        site_feature = feature[0, 20:]
+        feature = np.stack([self.feature[item, :] for item in reads])
 
-        current_feature = torch.tensor(current_feature, dtype=torch.float32)
-        site_feature = torch.tensor(site_feature, dtype=torch.float32)
+        feature = torch.tensor(feature, dtype=torch.float32)
 
-        return current_feature, site_feature, mod
+        return feature, idx
 
     def __len__(self):
         return len(self.sitedict)
@@ -164,7 +176,11 @@ class GenNanoBags(object):
             ele = i.rstrip().split()
             ground_truth.append("|".join(ele))
 
-        self.gt = ground_truth
+
+        y_gt = [item.split("|") for item in ground_truth]
+        for item in y_gt:
+            del item[2]
+        self.gt = ["|".join(item) for item in y_gt]
 
         "2.loading read feature"
         cur_info = []
@@ -175,6 +191,7 @@ class GenNanoBags(object):
 
         for i in open(path, "r"):
             ele = i.rstrip().split()
+
             if ele[2] in motif:
 
                 cur, mat, ids = self.extractCurrentAlign(ele)
@@ -204,6 +221,7 @@ class GenNanoBags(object):
         id = np.array([item for item in self.dl['read']])
 
         # split for train, val and test dataset
+        random.seed(88888888)
         indices = random.sample(range(0, len(id)), len(id))
 
         valid_size = int(0.2 * len(id))
@@ -239,22 +257,7 @@ class GenNanoBags(object):
             else:
                 site_dict[site].append(index)
 
-        y_tmp = [item.split("|") for item in list(site_dict.keys())]
-        for item in y_tmp:
-            del item[-1]
-        y_tmp = ["|".join(item) for item in y_tmp]
-
-        y_gt = [item.split("|") for item in self.gt]
-        for item in y_gt:
-            del item[2]
-        y_gt = ["|".join(item) for item in y_gt]
-        Y = [item in y_gt for item in y_tmp]
-        mod_key = list(site_dict.keys())
-        mod = {}
-        for idx, item in enumerate(Y):
-            mod[mod_key[idx]]=item
-
-        bag = nanoBag(feature=feature, sitedict=site_dict, config=self.config, id=id, mod=mod)
+        bag = nanoBag(feature=feature, sitedict=site_dict, config=self.config, id=id, mod=self.gt)
 
         return bag
 
@@ -350,7 +353,10 @@ def LoadModel(config):
             model: Positive and Unlabeled Multi-Instance Model
     """
 
-    if config['model_chosen'] == 'pum6a':
+    if config['model_chosen'] == 'Nanopum6a':
+        model = Nanopum6a(config)
+
+    elif config['model_chosen'] == 'pum6a':
         model = pum6a(config)
 
     elif config['model_chosen'] == 'puma':
@@ -403,6 +409,12 @@ def LoadTrainer(config: Dict,
     elif config['trainer_chosen'] == "Trainer":
 
         trainer = baseTrainer(config=config,
+                             model=model,
+                             bag=bag)
+
+    elif config['trainer_chosen'] == "nanoTrainer":
+
+        trainer = nanoTrainer(config=config,
                              model=model,
                              bag=bag)
 

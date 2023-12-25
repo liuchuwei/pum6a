@@ -5,7 +5,7 @@ from argparse import ArgumentDefaultsHelpFormatter
 import toml
 
 from utils.train_utils import set_seed
-from utils.io_utils import LoadNanoBags
+from utils.io_utils import LoadNanoBags, LoadModel, LoadTrainer
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -32,5 +32,11 @@ def main(args):
     bag = LoadNanoBags(config['dataload'])
 
     "4.load model"
+    model = LoadModel(config['model'])
 
     "5.train model"
+    trainer = LoadTrainer(config=config['trainer'],
+                          model=model,
+                          bag=bag)
+
+    trainer.run()

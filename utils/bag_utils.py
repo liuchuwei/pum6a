@@ -9,6 +9,19 @@ import scipy.io as scio
 from utils.gen_data import genData
 import random
 
+def nano_collate(batch):
+
+    """
+    Assitance method of inference collection for dataloader
+    """
+
+    n_instance = [item[0].shape[0] for item in batch]
+    features = torch.cat([item[0] for item in batch])
+    bag_idx = [item[1] for item in batch]
+
+    return features, n_instance, bag_idx
+
+
 def inference_collate(batch):
 
     """

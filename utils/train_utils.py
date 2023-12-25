@@ -7,7 +7,7 @@ import torch.utils.data as data_utils
 from typing import *
 from sklearn.model_selection import StratifiedKFold
 import datetime
-from utils.bag_utils import inference_collate, BagsLoader
+from utils.bag_utils import inference_collate, BagsLoader, nano_collate
 from torch import optim
 
 from sklearn.metrics import roc_auc_score

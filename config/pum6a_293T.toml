@@ -4,5 +4,45 @@ seed = 88888888
 
     signal="result/caNano/HEK293T_1/wt.feature.tsv"
     ground_truth="dataset/Nano/HEK293T_GroundTruth.txt"
-    motif="AAACA" #  "AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"
-    min_read=1
+    motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
+    min_read=3
+
+[model]
+
+    model_chosen = 'Nanopum6a'
+    device = 'cuda'
+
+    [model.feature_extractor]
+    type = 'linear'
+    n_features = 40
+    dropout_rate = 0
+    hidden_neurons = [40] # 2
+    batch_norm = false
+    hidden_activation = 'relu'
+
+    [model.attention]
+    L=40  # Attention model_factory input nodes
+    D=20  # Attention model_factory intermediate nodes
+    K=1  # Attention model_factory output nodes
+
+
+[trainer]
+
+    trainer_chosen='nanoTrainer'
+    seed = 88888888
+    freq = 'ran'
+    device = 'cuda'
+    save_dir = 'result/293T_model/'
+
+    epochs = 1
+    batch_size = 256 # 512
+    early_stopping = 3
+    verbose = true
+
+    [trainer.optimizer]
+
+    opt = 'AdamW'
+    lr = 0.0075 # 0.0075
+    weight_decay=1e-05
+    amsgrad=true
+    opt_scheduler='none'
