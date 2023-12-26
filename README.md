@@ -101,10 +101,19 @@ resquiggling
    python run.py preprocess --single $single_fast5 -o $output -g $genome.fa -r $transcript.fa -i $gene2transcripts.txt -b $bam
    ```
 
-4.3 train/load model
+4.3 train model
+   ```shell
+   python run.py train --config $config.toml
+   ```
 
 4.4 predict
-
+   ```shell
+   python run.py predict --config $config.toml
+   ```
+4.5 evaluate
+   ```shell
+   python run.py evaluate --config $config.toml
+   ```
 
 ## License
 Distributed under the GPL-2.0 License License. See LICENSE for more information.

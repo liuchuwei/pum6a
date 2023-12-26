@@ -1,0 +1,322 @@
+# modified from: https://github.com/zhongzhd/ont_m6a_detection
+# ------------------preprocess---------------------
+# 01.basecalling
+python 01.basecalling.py -i <directory of fast5 files> -o <output directory>
+python 01.basecalling.py -i data/m6A_et_al/mES_WT.fast5.tar.gz -o data/basecall/mES_m6A_WT
+
+# 02.minimap
+python 01.minimap.py -i <directory of fastq files> -o <output directory> -r <path of reference>
+python 01.minimap.py -i data/basecall/pU_cc_mod/pass -o data/minimap/pU_cc_mod -r data/cc_ref.fa
+
+# ------------------m6A detection-------------------
+# 03.DRUMMER
+python 03.DRUMMER.py -r <REFERENCE_FASTA> -l <REFERENCE_FASTA> -t <TREATMENT_BAM> \
+    -c <CONTROL_BAM> -o <Output_directory> -m <Mode> -a <TREATMENT_BAM>
+
+python 03.DRUMMER.py -r data/cc_ref.fa -l data/cc_transcript.txt -t data/minimap/ATI_cc_mod/map.bam \
+    -c data/minimap/ATI_cc_unmod/map.bam -o tmp -m True -a isoform
+
+# 04.DiffErr
+python 04.DiffErr.py -r <reference-fasta> -b <cond-B-bams> -a <cond-B-bams> -o <output.bed> \
+    -f <fdr-threshold> --median-expr-threshold 0 --min-expr-threshold 0 -p 16
+
+python 04.DiffErr.py -r data/cc_ref.fa -b data/minimap/ATI_cc_mod/map.bam -a data/minimap/ATI_cc_unmod/map.bam -o tmp_differr.bed \
+    -f 2 --median-expr-threshold 0 --min-expr-threshold 0 -p 16
+
+# 05.ELGOS
+python 05.ELGOS rna_mod -i <bam file> -reg <bed files> -ref <REFERENCE> -m <rBEM5+2 model> -p <output file prefix> \
+-o <output file directory> --sub_bam_dir <SUB_BAM_DIR> \
+--max_depth 2000000 --min_depth 5 --esb 0 --oddR 1 --pval 1 -t 16
+
+python 05.ELGOS rna_mod -i data/minimap/ATI_cc_mod/map.bam -reg data/cc_ref.bed -ref data/cc_ref.fa -m Elgos/models/eligos_dRNA_ivt_model.v1.0.json\
+-p wt -o wt --sub_bam_dir wt/tmp \
+--max_depth 2000000 --min_depth 5 --esb 0 --oddR 1 --pval 1 -t 16
+
+# 06.ELGOS_diff
+python 06.ELGOS_diff pair_diff_mod -tbam <wt bam file> -cbam <ko bam file> -reg <bed files>  -ref <REFERENCE> -p com -o com
+--sub_bam_dir com/tmp --max_depth 5000000 --min_depth 5 --esb 0 --oddR 1 --pval 1 -t 16
+
+python 06.ELGOS_diff pair_diff_mod -tbam data/minimap/ATI_cc_mod/map.bam -cbam data/minimap/ATI_cc_unmod/map.bam \
+-reg data/cc_ref.bed -ref data/cc_ref.fa -p com -o com
+--sub_bam_dir com/tmp --max_depth 5000000 --min_depth 5 --esb 0 --oddR 1 --pval 1 -t 16
+
+# 07.Epinano
+## extract features
+python 07.Epinano_Variants.py -R $ref -b <wt / ko bam file> -s <path to sam2tsv> -n 16 -T t
+python 07.Epinano_Variants.py -R data/cc_ref.fa -b data/minimap/ATI_cc_mod/map.bam -s Epinano/misc/sam2tsv.jar -n 16 -T t
+
+## slide features
+python 07.Epinano_slide_feature.py <per.site.csv> 5
+python 07.Epinano_slide_feature.py data/minimap/ATI_cc_mod/map.plus_strand.per.site.csv 5
+
+## predict modifications
+python 07.Epinano_Predict.py \
+--model $Epinano/models/rrach.q3.mis3.del3.linear.dump \
+--predict wt.plus_strand.per.site.5mer.csv \
+--columns 8,13,23 \
+--out_prefix wt
+
+python 07.Epinano_Predict.py
+--model EpiNano/models/rrach.q3.mis3.del3.linear.dump
+--predict data/minimap/ATI_cc_mod/map.plus_strand.per.site.5mer.csv
+--columns 8,13,23
+--out_prefix Epinano_wt
+
+07.Epinano_delta
+## make delta features
+python 07.Epinano_delta.py $epinano/wt.plus_strand.per.site.5mer.csv \
+$epinano/ko.plus_strand.per.site.5mer.csv \
+5 5 > wt_ko_delta.5mer.csv
+
+python 07.Epinano_delta.py data/minimap/ATI_cc_mod/map.plus_strand.per.site.5mer.csv
+data/minimap/ATI_cc_unmod/map.plus_strand.per.site.5mer.csv
+5 5 > wt_ko_delta.5mer.csv
+
+## predict modifications
+python 07.Epinano_Predict.py \
+--model $Epinano/models/rrach.deltaQ3.deltaMis3.deltaDel3.linear.dump \
+--predict wt_ko_delta.5mer.csv \
+--columns 7,12,22 \
+--out_prefix com
+
+python 07.Epinano_Predict.py
+--model EpiNano/models/rrach.deltaQ3.deltaMis3.deltaDel3.linear.dump
+--predict wt_ko_delta.5mer.csv
+--columns 7,12,22
+--out_prefix com
+
+08.tombo
+## merge fastq
+cat *.fastq > merge.fastq
+cat data/basecall/ATI_cc_unmod/pass/*.fastq > data/basecall/ATI_cc_unmod/merge.fastq
+
+## seperate fast5
+multi_to_single_fast5 -i <directory of fast5 files> \
+-s <directory of output> -t 40 --recursive
+
+multi_to_single_fast5 -i data/basecall/ATI_cc_unmod/fast5 \
+-s data/basecall/ATI_cc_unmod/single -t 40 --recursive
+
+## annotate_raw_with_fastqs
+08.Tombo.py preprocess annotate_raw_with_fastqs
+--fast5-basedir <directory of fast5 files>
+--fastq-filenames <path of merge fastq>
+--overwrite
+--processes 8
+
+08.Tombo.py preprocess annotate_raw_with_fastqs
+--fast5-basedir data/basecall/ATI_cc_unmod/single
+--fastq-filenames data/basecall/ATI_cc_unmod/merge.fastq
+--overwrite
+--processes 8
+
+## resquiggling
+08.Tombo.py resquiggle <directory of fast5 files> <directory of reference> \
+--rna \
+--corrected-group RawGenomeCorrected_000 \
+--basecall-group Basecall_1D_000 \
+--overwrite \
+--processes 16 \
+--fit-global-scale \
+--include-event-stdev
+
+08.Tombo.py resquiggle data/basecall/ATI_cc_unmod/single data/cc_ref.fa
+--rna
+--corrected-group RawGenomeCorrected_000
+--basecall-group Basecall_1D_000
+--overwrite
+--processes 16
+--fit-global-scale
+--include-event-stdev
+
+## detect modifications
+08.Tombo.py detect_modifications de_novo --fast5-basedirs <directory of fast5 files> \
+--statistics-file-basename <output name> \
+--corrected-group RawGenomeCorrected_000 \
+--processes 16
+
+08.Tombo.py detect_modifications de_novo --fast5-basedirs data/basecall/ATI_cc_unmod/single
+--statistics-file-basename ATI_cc_unmod
+--corrected-group RawGenomeCorrected_000
+--processes 16
+
+## output statistical results
+08.Tombo.py text_output browser_files --fast5-basedirs <directory of fast5 files> \
+--statistics-filename <output name>  \
+--browser-file-basename wt_rrach \
+--genome-fasta <path of reference> \
+--motif-descriptions RRACH:3:m6A \
+--file-types coverage dampened_fraction fraction \
+--corrected-group RawGenomeCorrected_000
+
+08.Tombo.py text_output browser_files --fast5-basedirs data/basecall/ATI_cc_unmod/single
+--statistics-filename ATI_cc_unmod.tombo.stats
+--browser-file-basename ATI_cc_unmod_rrach
+--genome-fasta data/cc_ref.fa
+--motif-descriptions RRACH:3:m6A
+--file-types coverage dampened_fraction fraction
+--corrected-group RawGenomeCorrected_000
+
+08. Tombo_com
+## detect modifications
+tombo detect_modifications model_sample_compare --fast5-basedirs $wt_fast5/workspace \
+--control-fast5-basedirs $ko_fast5/workspace \
+--statistics-file-basename com \
+--corrected-group RawGenomeCorrected_000 \
+--processes 16
+
+## output statistical results
+tombo text_output browser_files --fast5-basedirs $ko_fast5/workspace \
+--control-fast5-basedirs $ko_fast5/workspace \
+--statistics-filename com.tombo.stats \
+--browser-file-basename com \
+--genome-fasta ${fasta} \
+--motif-descriptions RRACH:3:m6A \
+--file-types coverage dampened_fraction fraction \
+--corrected-group RawGenomeCorrected_000
+
+09.Mines
+## obtain input statistical files from Tombo
+08.Tombo.py text_output browser_files --fast5-basedirs <directory of fast5 files> \
+--statistics-filename <output name>  \
+--browser-file-basename wt_rrach \
+--genome-fasta <path of reference> \
+--motif-descriptions RRACH:3:m6A \
+--file-types coverage dampened_fraction fraction \
+--corrected-group RawGenomeCorrected_000
+
+08.Tombo.py text_output browser_files --fast5-basedirs data/basecall/ATI_cc_unmod/single
+--statistics-filename ATI_cc_unmod.tombo.stats
+--browser-file-basename ATI_cc_unmod_rrach
+--genome-fasta data/cc_ref.fa
+--motif-descriptions RRACH:3:m6A
+--file-types coverage dampened_fraction fraction
+--corrected-group RawGenomeCorrected_000
+
+awk '{if($0!=null){print $0}}' wt.fraction_modified_reads.plus.wig > wt.wig
+wig2bed < wt.wig > wt.fraction_modified_reads.plus.wig.bed --multisplit=mines
+
+awk '{if($0!=null){print $0}}' ATI_cc_unmod_rrach.fraction_modified_reads.m6A.plus.wig > ATI_cc_unmod.wig
+wig2bed < ATI_cc_unmod.wig > ATI_cc_unmod.fraction_modified_reads.plus.wig.bed --multisplit=mines
+
+## detect m6A
+python 09.Mines.py --fraction_modified $tombo/wt.fraction_modified_reads.plus.wig.bed \
+--coverage $tombo/wt.coverage.plus.bedgraph \
+--output wt.bed \
+--ref $ref \
+--kmer_models $MINES/Final_Models/names.txt
+
+python 09.Mines.py --fraction_modified  ATI_cc_unmod.fraction_modified_reads.plus.wig.bed
+--coverage ATI_cc_unmod_rrach.coverage.plus.bedgraph
+--output ATI_cc_unmod.bed
+--ref data/cc_ref.fa
+--kmer_models Mines/Final_Models/names.txt
+
+10.Nanocompare
+#index samples
+~/biotools/nanopolish/nanopolish index -d nanopore_raw_file_directory reads.fastq
+~/biotools/nanopolish/nanopolish index -d data/basecall/ATI_cc_mod/fast5/ data/basecall/ATI_cc_mod/merge.fastq
+
+
+#eventalign with samples
+nanopolish eventalign --reads $wt_fastq \
+--bam $wt_bam \
+--genome $ref \
+--samples \
+--print-read-names \
+--scale-events \
+--threads 16 > wt_eventalign.txt
+
+~/biotools/nanopolish/nanopolish eventalign --reads data/basecall/ATI_cc_mod/merge.fastq \
+--bam data/minimap/ATI_cc_mod/map.bam \
+--genome data/cc_ref.fa \
+--samples \
+--print-read-names \
+--scale-events \
+--threads 16 > wt_eventalign.txt
+
+#eventalign_collapse
+10.Nanocompore.py eventalign_collapse -i wt_eventalign.txt -o wt -t 16
+10.Nanocompore.py eventalign_collapse -i ko_eventalign.txt -o ko -t 16
+
+#samples comparison for detecting modifications
+10.Nanocompore.py sampcomp --file_list1 wt/out_eventalign_collapse.tsv
+--file_list2 ko/out_eventalign_collapse.tsv
+--label1 wt --label2 ko
+--fasta data/cc_ref.fa
+--bed data/cc_ref.bed12
+--outpath com
+--min_coverage 5
+--min_ref_length 10
+--allow_warnings
+--nthreads 16
+
+11.Nanom6A
+# Convert merged single big fast5 into small size fast5 file
+multi_to_single_fast5 -i guppy -s single -t 40 --recursive
+
+#filter basecalling failed reads:
+mkdir workspace_fail
+awk '{if($10=="FALSE"){print $2}}' sequencing_summary.txt > fail_fast5.txt
+cat fail_fast5.txt | while read id;do mv single/$id workspace_fail;done
+
+# annotate_raw_with_fastqs
+08.Tombo.py preprocess annotate_raw_with_fastqs
+--fast5-basedir data/basecall/ATI_cc_mod/single
+--fastq-filenames data/basecall/ATI_cc_mod/merge.fastq
+--overwrite
+--processes 8
+
+# resquiggle raw signals
+08.Tombo.py resquiggle data/basecall/ATI_cc_mod/single data/cc_ref.fa
+--rna
+--corrected-group RawGenomeCorrected_000
+--basecall-group Basecall_1D_000
+--overwrite
+--processes 16
+--fit-global-scale
+--include-event-stdev
+
+# list all fast5 file
+find single -name "*.fast5" >files.txt
+
+#extracting signals
+extract_raw_and_feature_fast --cpu=20 --fl=data/basecall/ATI_cc_mod/files.txt -o result --clip=10
+
+# predicting m6A site
+# predict_sites --cpu 20 -i result -o result_final -r data/cc_ref.fa -g data/cc_ref.fa -b data/gene2transcripts.txt --model Nanom6A/model
+
+15.xPore
+#data preparation
+15.xPore.py dataprep --eventalign ko_eventalign.txt
+--out_dir ko
+--n_processes 16
+--readcount_max 2000000
+
+#detect differential RNA modification
+15.xPore.py diffmod --config xPore_config.yml
+--n_processes 16
+
+13.m6anet
+#dataprep
+m6anet dataprep --eventalign wt_eventalign.txt
+--out_dir wt
+--n_processes 16
+--readcount_max 2000000
+
+#detect m6A
+m6anet inference --input_dir wt
+--out_dir run/wt
+--n_processes 16
+
+14.Dinopore
+cd Dinopore
+~/biotools/samtools-1.16.1/samtools view -@ 16 -h -F 4 data/minimap/ATI_cc_mod/map.bam | ~/anaconda3/envs/DinoPore/bin/sam2tsv -r data/cc_ref.fa | awk 'BEGIN{FS=OFS="\t"} ($9 != "S") && ($9 != "H") && ($9 != "N")' - | awk 'BEGIN{FS=OFS="\t"} ($7=="."){$7="-99";} ($4=="."){$4="-99"} ($5=="."){$5="na"} ($8=="."){$8="na"} ($9=="D"){$6=" "} ($2==16){$2="n"} ($2==0){$2="p"} 1' > final
+
+
+
+
+
+
+
+
