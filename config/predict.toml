@@ -1,12 +1,11 @@
-output="result/pum6a/293T_4"
+output="result/pum6a/AGS_Normal_A2"
 
 [dataload]
-    signal="result/caNano/HEK293T_4/wt.feature.tsv"
+    signal="result/caNano/AGS_Normal_A2/wt.feature.tsv"
     motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
-#    motif=  ["AAACA"]
     min_read=3
     inference=true
 
 [model]
-    model_path = 'result/293T_model/KNUME_231223161935_88888888_ran_model.pt'
+    model_path = 'result/293T_model/hV0Pn_231228142737_88888888_ran_model.pt'
     device = 'cuda'

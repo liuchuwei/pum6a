@@ -1,0 +1,4 @@
+site="result/Mines/mES_WT_site_20.csv"
+groundtruth="dataset/Nano/mESgroundtruth.txt"
+output="result/Mines/mES_WT_evaluate_20.csv"
+

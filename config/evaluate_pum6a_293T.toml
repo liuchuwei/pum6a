@@ -1,3 +1,0 @@
-site="result/tombo/HEK293T_4_site.csv"
-groundtruth="dataset/Nano/HEK293T_GroundTruth.txt"
-output="result/tombo/HEK293T_4_evaluate.csv"

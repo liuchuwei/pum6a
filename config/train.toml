@@ -6,6 +6,8 @@ seed = 88888888
     ground_truth="dataset/Nano/HEK293T_GroundTruth.txt"
     motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
     min_read=3
+    inference=false
+    transit = "result/293T_model/transit/RRACH_3/"
 
 [model]
 
@@ -15,14 +17,14 @@ seed = 88888888
     [model.feature_extractor]
     type = 'linear'
     n_features = 40
-    dropout_rate = 0
-    hidden_neurons = [40] # 2
+    dropout_rate = 0.1
+    hidden_neurons = [96] # 2
     batch_norm = false
     hidden_activation = 'relu'
 
     [model.attention]
-    L=40  # Attention model_factory input nodes
-    D=20  # Attention model_factory intermediate nodes
+    L=96  # Attention model_factory input nodes
+    D=48  # Attention model_factory intermediate nodes
     K=1  # Attention model_factory output nodes
 
 
@@ -35,14 +37,14 @@ seed = 88888888
     save_dir = 'result/293T_model/'
 
     epochs = 1
-    batch_size = 256 # 512
+    batch_size = 128 # 128
     early_stopping = 3
     verbose = true
 
     [trainer.optimizer]
 
     opt = 'AdamW'
-    lr = 0.0075 # 0.0075
+    lr = 0.075 # 0.0075
     weight_decay=1e-05
     amsgrad=true
     opt_scheduler='none'
