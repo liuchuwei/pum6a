@@ -8,6 +8,7 @@ import numpy as np
 import toml
 import pandas as pd
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 
 def argparser():
@@ -45,7 +46,7 @@ def main(args):
 
         y_gt = [item.split("|") for item in ground_truth]
         for item in y_gt:
-            del item[2]
+            del item[1]
         y_gt = ["|".join(item) for item in y_gt]
 
         y_tmp = site['site'].tolist()
@@ -53,15 +54,21 @@ def main(args):
         for item in y_tmp:
             del item[-1]
         y_tmp = ["|".join(item) for item in y_tmp]
-        y = [item in y_gt for item in y_tmp]
+        print("mapping ground truth...")
+        pbar = tqdm(total=len(y_tmp), position=0, leave=True)
+        y = []
+        for item in y_tmp:
+            y.append(item in y_gt)
+            pbar.update(1)
 
     else:
+        site = pd.read_csv(config['output'])
         y = site['groundtruth']
 
     "3.evaluate"
     y_pred = site['pro'].tolist()
     bag_auc = roc_auc_score(np.array(y, dtype=np.float32), np.array(y_pred))
-    print(bag_auc)
+    print("bag_auc: %.3f" % bag_auc)
 
     if not os.path.exists(config['output']):
 

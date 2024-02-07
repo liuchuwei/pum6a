@@ -1,3 +1,6 @@
+import os
+import pickle
+
 import torch
 
 from model_factory.PUM6A import pum6a
@@ -20,7 +23,6 @@ import random
 from torch.utils.data import Dataset
 
 from collections import defaultdict
-
 #####################################
 #
 # Load Nanopore Bags
@@ -274,20 +276,65 @@ class GenNanoBags(object):
 
     def loaddata(self):
 
-        print("loading and preprocessing data...")
-        self.dl = self.preprocess()
-        print("finish!")
-
-        print("normalize and reshape data...")
-        self.splitData()
-
-        print("building nanoBags dataset...")
         if self.config['inference']:
+            print("loading and preprocessing data...")
+            self.dl = self.preprocess()
+            print("finish!")
+
+            print("normalize and reshape data...")
+            self.splitData()
+
+            print("building nanoBags dataset...")
             self.Bags = self.buildNanoBags(self.bag)
+
         else:
-            self.trainBags = self.buildNanoBags(self.train)
-            self.valBags = self.buildNanoBags(self.val)
-            self.testBags = self.buildNanoBags(self.test)
+            if len(os.listdir(self.config['transit'])) == 0:
+                print("loading and preprocessing data...")
+                self.dl = self.preprocess()
+                print("finish!")
+
+                print("normalize and reshape data...")
+                self.splitData()
+
+                print("building nanoBags dataset...")
+
+                self.trainBags = self.buildNanoBags(self.train)
+
+                path = self.config['transit'] + "train_bag.pl"
+                fw = open(path, 'wb')
+                pickle.dump(self.trainBags, fw)
+                fw.close()
+
+                self.valBags = self.buildNanoBags(self.val)
+
+                path = self.config['transit'] + "val_bag.pl"
+                fw = open(path, 'wb')
+                pickle.dump(self.valBags, fw)
+                fw.close()
+
+                self.testBags = self.buildNanoBags(self.test)
+
+                path = self.config['transit'] + "test_bag.pl"
+                fw = open(path, 'wb')
+                pickle.dump(self.testBags, fw)
+                fw.close()
+            else:
+                print("loading dataset...")
+
+                path = self.config['transit'] + "train_bag.pl"
+                fr = open(path, 'rb')
+                self.trainBags = pickle.load(fr)
+                fr.close()
+
+                path = self.config['transit'] + "val_bag.pl"
+                fr = open(path, 'rb')
+                self.valBags = pickle.load(fr)
+                fr.close()
+
+                path = self.config['transit'] + "test_bag.pl"
+                fr = open(path, 'rb')
+                self.testBags = pickle.load(fr)
+                fr.close()
 
 def LoadNanoBags(config: Dict):
 

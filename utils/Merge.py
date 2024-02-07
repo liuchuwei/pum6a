@@ -54,6 +54,7 @@ def obtain_chromeInfo(args):
     fl = "{0}/extract.bed12".format(basefl)
     readgene = {}
     for i in open(fl, "r"):
+
         ele = i.rstrip().split()
         readgene[ele[3]] = [ele[0], ele[1], ele[2], ele[5]]
     return readgene

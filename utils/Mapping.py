@@ -21,8 +21,10 @@ def mapping(args, nums):
     os.system(cmd)
     cmd = "%s index %s/extract.sort.bam" % (tools.samtools, basefl)
     os.system(cmd)
-    cmd = ' ~/anaconda3/envs/Nanom6A/bin/sam2tsv -r {1} {0}/extract.sort.bam|gzip -c >{0}/extract.sort.bam.tsv.gz'.format(
-        basefl, args.genome)
+    # cmd = ' ~/anaconda3/envs/Nanom6A/bin/sam2tsv -r {1} {0}/extract.sort.bam|gzip -c >{0}/extract.sort.bam.tsv.gz'.format(
+    #     basefl, args.genome)
+    cmd = 'java -jar {2} -r {1} {0}/extract.sort.bam|gzip -c >{0}/extract.sort.bam.tsv.gz'.format(
+        basefl, args.genome, tools.sam2tsv)
     os.system(cmd)
     cmd = "%s -bed12 -split -i %s/extract.sort.bam >%s/extract.bed12" % (
         tools.bamtobed, basefl, basefl)

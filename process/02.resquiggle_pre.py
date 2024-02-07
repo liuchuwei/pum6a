@@ -4,7 +4,7 @@ import argparse
 import sys
 import os
 
-from utils.tookit import Tookits
+from tookit import Tookits
 
 # args define
 parser = argparse.ArgumentParser(description='Basecalling')

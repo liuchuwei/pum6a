@@ -377,5 +377,5 @@ def align_variant(args):
         tmp_dir = prefix + '_TMP_'
         _prepare_dir(tmp_dir)
         out_var_fn = "{}.{}.per.site.csv".format(prefix, strands[idx])
-        tsv_to_var(tsvit, tmp_dir, out_var_fn, args.cpu)
+        tsv_to_var(tsvit, tmp_dir, out_var_fn, int(args.cpu))
 
