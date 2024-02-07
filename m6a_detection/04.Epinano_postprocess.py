@@ -10,10 +10,10 @@ def load_bed(args):
     fl = args.bed
     bed = defaultdict(dict)
     for i in open(fl, "r"):
-        ele = i.rstrip().split()
-        site = ele[2]
-        motif = str(int(site) - 2) + "-" + str(int(site) + 2)
-        bed[ele[0]][motif]=ele[-1]
+        if not i.startswith("#"):
+            ele = i.rstrip().split(",")
+            motif = ele[1]
+            bed[ele[2]][motif]=ele[-2]
     return bed
 
 def load_reference(args):

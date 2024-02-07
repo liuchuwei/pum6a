@@ -10,10 +10,13 @@ def load_bed(args):
     fl = args.bed
     bed = defaultdict(dict)
     for i in open(fl, "r"):
-        ele = i.rstrip().split()
-        site = ele[2]
-        motif = str(int(site) - 2) + "-" + str(int(site) + 2)
-        bed[ele[0]][motif]=ele[-1]
+        ele = i.rstrip().split() # 'chrom', 'start_loc', 'end_loc', 'strand', 'name', 'ref', 'homo_seq', 'kmer5', 'majorAllel', 'majorAllelFreq', 'kmer7', 'test_err_1', 'model_err_1', 'test_cor_1', 'model_cor_1', 'oddR', 'pval', 'adjPval', 'baseExt', 'total_reads', 'ESB_test', 'ESB_ctrl'
+        if not ele[0] == 'chrom':
+            if ele[7] in ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]:
+                if int(ele[-3])>=int(args.min_read):
+                    site = ele[2]
+                    motif = str(int(site) - 2) + "-" + str(int(site) + 2)
+                    bed[ele[0]][motif]=ele[-5]
     return bed
 
 def load_reference(args):
@@ -80,14 +83,12 @@ def Merge(bed, chrome_info, rev_iso, gene, siteInfo):
 
 def GetOutput(args, prob_site):
     output = args.output
-    min_read = int(args.min_read)
     probs = []
     sites = []
     for item in prob_site:
         reads = prob_site[item]
-        if len(reads) >= min_read:
-            sites.append(item)
-            probs.append(np.array(reads, dtype=np.float).max())
+        sites.append(item)
+        probs.append(np.float32(-np.log10(np.array(reads, dtype=np.float32).min()+10e-320)))
     site_info = pd.DataFrame({'site': np.array(sites), 'pro': np.array(probs)})
     site_path = output
     site_info.to_csv(site_path, index=False)

@@ -6,15 +6,15 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
-def load_bed(args):
-    fl = args.bed
-    bed = defaultdict(dict)
+def load_mine_bed(args):
+    fl = args.mines_bed
+    mines_bed = defaultdict(dict)
     for i in open(fl, "r"):
         ele = i.rstrip().split()
-        site = ele[2]
+        site = ele[1]
         motif = str(int(site) - 2) + "-" + str(int(site) + 2)
-        bed[ele[0]][motif]=ele[-1]
-    return bed
+        mines_bed[ele[0]][motif]=ele[-2]
+    return mines_bed
 
 def load_reference(args):
 
@@ -48,20 +48,20 @@ def load_reference(args):
 
     return chrome_info, rev_iso, gene, siteInfo
 
-def Merge(bed, chrome_info, rev_iso, gene, siteInfo):
+def Merge(mine_bed, chrome_info, rev_iso, gene, siteInfo):
 
     ## Merge
-    MergeSite = list(set(list(siteInfo.keys())).intersection(set(list(bed.keys()))))
+    MergeSite = list(set(list(siteInfo.keys())).intersection(set(list(mine_bed.keys()))))
     prob_site = defaultdict(dict)
     pbar = tqdm(total=len(MergeSite), position=0, leave=True)
     for ens in MergeSite:
-        bed_motif = list(bed[ens].keys())
+        bed_motif = list(mine_bed[ens].keys())
         site_motif = list(siteInfo[ens].keys())
         inter_motif = list(set(site_motif).intersection(set(bed_motif)))
         pbar.update(1)
 
         for motif in inter_motif:
-            prob = bed[ens][motif]
+            prob = mine_bed[ens][motif]
             site = siteInfo[ens][motif]
             read = rev_iso[ens]
             for re in read:
@@ -87,7 +87,7 @@ def GetOutput(args, prob_site):
         reads = prob_site[item]
         if len(reads) >= min_read:
             sites.append(item)
-            probs.append(np.array(reads, dtype=np.float).max())
+            probs.append(np.array(reads, dtype=np.float32).max())
     site_info = pd.DataFrame({'site': np.array(sites), 'pro': np.array(probs)})
     site_path = output
     site_info.to_csv(site_path, index=False)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Extract fast5 files.')
     parser.add_argument('-o', '--output', required=True, help="Output file")
-    parser.add_argument('-bed', '--bed', required=True, help="Tombo bed file")
+    parser.add_argument('-bed', '--mines_bed', required=True, help="mine bed file")
     parser.add_argument('-ref', '--reference', required=True, help="Reference directory: directory of pum6a result")
     parser.add_argument('-min_read', '--min_read', required=True, help="Reference directory: directory of pum6a result")
 
@@ -105,8 +105,8 @@ if __name__ == "__main__":
     global args
     args = FLAGS
 
-    bed = load_bed(args)
+    mines_bed = load_mine_bed(args)
     chrome_info, rev_iso, gene, siteInfo = load_reference(args)
-    prob_site = Merge(bed, chrome_info, rev_iso, gene, siteInfo)
+    prob_site = Merge(mines_bed, chrome_info, rev_iso, gene, siteInfo)
     GetOutput(args, prob_site)
 

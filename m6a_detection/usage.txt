@@ -180,8 +180,6 @@ tombo text_output browser_files --fast5-basedirs $ko_fast5/workspace \
 08.Tombo.py text_output browser_files --fast5-basedirs <directory of fast5 files> \
 --statistics-filename <output name>  \
 --browser-file-basename wt_rrach \
---genome-fasta <path of reference> \
---motif-descriptions RRACH:3:m6A \
 --file-types coverage dampened_fraction fraction \
 --corrected-group RawGenomeCorrected_000
 

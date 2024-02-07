@@ -11,9 +11,10 @@ def load_bed(args):
     bed = defaultdict(dict)
     for i in open(fl, "r"):
         ele = i.rstrip().split()
-        site = ele[2]
-        motif = str(int(site) - 2) + "-" + str(int(site) + 2)
-        bed[ele[0]][motif]=ele[-1]
+        reads, pos = ele[2].split("|")[:2]
+        pos = int(pos)
+        bed[reads][pos]=ele[1]
+
     return bed
 
 def load_reference(args):
@@ -29,13 +30,6 @@ def load_reference(args):
     # iso = multiprocessing.Manager().dict(pickle.load(f_read))
     iso = pickle.load(f_read)
 
-    rev_iso = defaultdict(dict)
-    for key in iso:
-        if len(rev_iso[iso[key]])==0:
-            rev_iso[iso[key]] = [key]
-        else:
-            rev_iso[iso[key]].append(key)
-
     ## gene
     f_read = open('%s.gene.pkl' % (ref), 'rb')
     # gene = multiprocessing.Manager().dict(pickle.load(f_read))
@@ -46,35 +40,31 @@ def load_reference(args):
     # siteInfo = multiprocessing.Manager().dict(pickle.load(f_read))
     siteInfo = pickle.load(f_read)
 
-    return chrome_info, rev_iso, gene, siteInfo
+    return chrome_info, iso, gene, siteInfo
 
-def Merge(bed, chrome_info, rev_iso, gene, siteInfo):
+def Merge(bed, chrome_info, iso, gene, siteInfo):
 
-    ## Merge
-    MergeSite = list(set(list(siteInfo.keys())).intersection(set(list(bed.keys()))))
     prob_site = defaultdict(dict)
-    pbar = tqdm(total=len(MergeSite), position=0, leave=True)
-    for ens in MergeSite:
-        bed_motif = list(bed[ens].keys())
-        site_motif = list(siteInfo[ens].keys())
-        inter_motif = list(set(site_motif).intersection(set(bed_motif)))
-        pbar.update(1)
-
-        for motif in inter_motif:
-            prob = bed[ens][motif]
-            site = siteInfo[ens][motif]
-            read = rev_iso[ens]
-            for re in read:
-                pos = int(motif.split("-")[0])+2-1-int(gene[re][1])
+    pbar = tqdm(total=len(bed.keys()), position=0, leave=True)
+    for rds in bed.keys():
+        pos = list(bed[rds].keys())
+        for sub_pos in pos:
+            if sub_pos in list(chrome_info[rds].keys()):
                 try:
-                    chrome = chrome_info[re][pos] +"|"+site.split("|")[0]
-                    if len(prob_site[chrome]) == 0:
-                        prob_site[chrome] = [prob]
+                    chrom = chrome_info[rds][sub_pos]
+                    ts = iso[rds]
+                    gs = gene[rds]
+                    site_pos = int(sub_pos) + int(gs[1]) + 1
+                    motif = str(int(site_pos) - 2) + "-" + str(int(site_pos) + 2)
+                    motif = siteInfo[ts][motif].split("|")[0]
+                    site= chrom + "|" + motif
+                    if len(prob_site[site])==0:
+                        prob_site[site] = [float(bed[rds][sub_pos])]
                     else:
-                        prob_site[chrome].append(prob)
-
+                        prob_site[site].append(float(bed[rds][sub_pos]))
                 except:
                     continue
+        pbar.update(1)
 
     return prob_site
 
@@ -104,9 +94,11 @@ if __name__ == "__main__":
 
     global args
     args = FLAGS
-
+    print("loading bed...")
     bed = load_bed(args)
-    chrome_info, rev_iso, gene, siteInfo = load_reference(args)
-    prob_site = Merge(bed, chrome_info, rev_iso, gene, siteInfo)
+    print("loading reference...")
+    chrome_info, iso, gene, siteInfo = load_reference(args)
+    print("merging...")
+    prob_site = Merge(bed, chrome_info, iso, gene, siteInfo)
     GetOutput(args, prob_site)
 

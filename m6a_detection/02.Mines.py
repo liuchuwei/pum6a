@@ -5,6 +5,7 @@ import pandas as pd
 import joblib
 import pybedtools
 import numpy as np
+from tqdm import tqdm
 
 
 def __is_valid_file(arg):
@@ -29,8 +30,11 @@ ref=args.ref
 f_modified=args.fraction_modified
 output=args.output
 
-# Search for DRACH motifs in data
-drach_seqs=['AGACT','GGACA','GGACC','GGACT']
+# Search for RRACH motifs in data
+print("Search for RRACH motifs in data...")
+# drach_seqs=['GGACT']
+# drach_seqs=['AGACT','GGACA','GGACC','GGACT']
+drach_seqs=["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
 tmp=pybedtools.BedTool(coverage)
 tmp=tmp.to_dataframe(header=None, names=['chr','start','stop','coverage','5','strand'])
 tmp=tmp[tmp['coverage']>4]
@@ -66,11 +70,13 @@ l3 = list()
 l4 = list()
 l5 = list()
 l6 = list()
+pbar = tqdm(total=len(seqs_df), position=0, leave=True)
 for i in seqs_df.index:
     l = list()
     s = seqs_df.loc[i,'seq']
     start = int(seqs_df.loc[i,'start'])
     chrom = seqs_df.loc[i,'chrom']
+    pbar.update(1)
     for j in range(0, len(s)-4):
         if s[j:j+5].upper() in drach_seqs:
             pos = start+j+3
@@ -124,6 +130,8 @@ df=df[df['start']>0]
 
 
 #Assign coverage values
+print()
+print("Assign coverage values...")
 df=pybedtools.BedTool.from_dataframe(df=df)
 tmp=pybedtools.BedTool(coverage)
 coverage=None
@@ -141,7 +149,6 @@ df_final = df_final.drop(columns=[-15,-14,-13,-12,-11,11,12,13,14])
 df_final=df_final.replace('.', np.nan)
 df_final = df_final.dropna()
 df_final['kmer']=list(map(lambda x:x.split(':')[2], df_final.index))
-
 #Load models
 #model_list = pd.read_csv('./Final_Models/names.txt', header=None, names=['file'])
 model_list = pd.read_csv(args.kmer_models, header=None, names=['file'])
@@ -149,6 +156,7 @@ model_list['kmer']=list(map(lambda x:x.split('_')[0], model_list.file))
 model_list.set_index('kmer',inplace=True)
 
 #Model predictions
+print("Model predictions...")
 preds=pd.DataFrame()
 for kmer in set(df_final['kmer']):
     kmer_df=df_final[df_final['kmer']==kmer]
@@ -178,5 +186,6 @@ preds=None
 mapping=None
 
 #Generate final bed file
-df=df[(df['pos']==0)&(df['pred']==1.0)&(df['drach_kmer'].isin(['GGACT', 'GGACA', 'AGACT', 'GGACC']))&(df['coverage']>=5)]
+# df=df[(df['pos']==0)&(df['pred']==1.0)&(df['drach_kmer'].isin(['GGACT', 'GGACA', 'AGACT', 'GGACC']))&(df['coverage']>=5)]
+df=df[(df['pos']==0)&(df['pred']==1.0)&(df['drach_kmer'].isin(["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]))&(df['coverage']>=5)]
 df.to_csv(output,sep='\t', header=None, index=None, columns=['chr','start','stop','drach_kmer','key','strand','f_mod','coverage'])

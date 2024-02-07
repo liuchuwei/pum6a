@@ -10,10 +10,11 @@ def load_bed(args):
     fl = args.bed
     bed = defaultdict(dict)
     for i in open(fl, "r"):
-        ele = i.rstrip().split()
-        site = ele[2]
-        motif = str(int(site) - 2) + "-" + str(int(site) + 2)
-        bed[ele[0]][motif]=ele[-1]
+        ele = i.rstrip().split(",")   # transcript_id,transcript_position,n_reads,probability_modified,kmer,mod_ratio
+        if not ele[0]=='transcript_id':
+            site = ele[1]
+            motif = str(int(site) - 1) + "-" + str(int(site) + 3)
+            bed[ele[0]][motif]=ele[-1]
     return bed
 
 def load_reference(args):
@@ -80,14 +81,12 @@ def Merge(bed, chrome_info, rev_iso, gene, siteInfo):
 
 def GetOutput(args, prob_site):
     output = args.output
-    min_read = int(args.min_read)
     probs = []
     sites = []
     for item in prob_site:
         reads = prob_site[item]
-        if len(reads) >= min_read:
-            sites.append(item)
-            probs.append(np.array(reads, dtype=np.float).max())
+        sites.append(item)
+        probs.append(np.array(reads, dtype=np.float).max())
     site_info = pd.DataFrame({'site': np.array(sites), 'pro': np.array(probs)})
     site_path = output
     site_info.to_csv(site_path, index=False)
@@ -98,7 +97,6 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', required=True, help="Output file")
     parser.add_argument('-bed', '--bed', required=True, help="Tombo bed file")
     parser.add_argument('-ref', '--reference', required=True, help="Reference directory: directory of pum6a result")
-    parser.add_argument('-min_read', '--min_read', required=True, help="Reference directory: directory of pum6a result")
 
     FLAGS = parser.parse_args(sys.argv[1:])
 
