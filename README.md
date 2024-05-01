@@ -6,6 +6,14 @@
 [![](https://img.shields.io/badge/samtools-v1.1.7-green)](https://github.com/samtools/samtools)
 [![](https://img.shields.io/badge/bedtools-v2.29.1-green)](https://bedtools.readthedocs.io/en/latest/)
 
+[![](https://img.shields.io/badge/ELIGOS-v2.0.1-blue)](https://gitlab.com/piroonj/eligos2)
+[![](https://img.shields.io/badge/Epinano-v1.2.0-blue)](https://github.com/novoalab/EpiNano)  
+[![](https://img.shields.io/badge/MINES-v0.0-orange)](https://github.com/YeoLab/MINES.git)
+[![](https://img.shields.io/badge/Tombo-v1.5.1-orange)](https://github.com/nanoporetech/tombo)
+[![](https://img.shields.io/badge/Nanom6A-v2.0-orange)](https://github.com/gaoyubang/nanom6A)  
+[![](https://img.shields.io/badge/m6Anet-v1.0-purple)](https://github.com/GoekeLab/m6anet) 
+[![](https://img.shields.io/badge/nanopolish-v0.14.0-purple)](https://github.com/jts/nanopolish)  
+
 ![](https://img.shields.io/badge/Genome-version-blue)  
 [![](https://img.shields.io/badge/GRCm39-17.07.23-orange)](https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/)
 [![](https://img.shields.io/badge/GRCh38.p14-17.07.23-orange)](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/)
@@ -34,10 +42,14 @@
 2.Install conda environment
    ```shell
    conda env create -f pum6a.yaml
-   conda env create -f tombo.yaml
    ```
-3.prepare tookit: 
 
+The usage of pum6a require the installation of [tombo](https://github.com/nanoporetech/tombo) environment.
+
+You can install [MINES](https://github.com/YeoLab/MINES.git), [m6Anet](https://github.com/GoekeLab/m6anet), [ELIGOS](https://gitlab.com/piroonj/eligos2), [Nanom6A](https://github.com/gaoyubang/nanom6A), and [Epinano](https://github.com/novoalab/EpiNano) environment according to your need. 
+Usage example can be found in the m6a_detection directory.
+
+3.prepare tookit:
 check and modify the tool paths of tookit.py file (in 'utils' directory).
     
 ## Usage
