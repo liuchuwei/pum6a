@@ -47,7 +47,7 @@
    pip install dask==2023.5.0 h5py==3.10.0 numpy==1.24.3 pandas==2.0.3 scikit-learn==1.3.2 tqdm==4.66.1 toml==0.10.2 statsmodels==0.14.1
    ```
 
-The usage of pum6a require the installation of [tombo](https://github.com/nanoporetech/tombo) environment.
+The usage of pum6a for m6A detection require the [tombo](https://github.com/nanoporetech/tombo) environment.
 
 You can install [MINES](https://github.com/YeoLab/MINES.git), [m6Anet](https://github.com/GoekeLab/m6anet), [ELIGOS](https://gitlab.com/piroonj/eligos2), [Nanom6A](https://github.com/gaoyubang/nanom6A), and [Epinano](https://github.com/novoalab/EpiNano) environment according to your need. 
 Usage example can be found in the m6a_detection directory.
