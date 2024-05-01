@@ -116,7 +116,7 @@ resquiggling
    ```
 
 ## License
-Distributed under the GPL-2.0 License License. See LICENSE for more information.
+Distributed under the MIT License. See LICENSE for more information.
 
 ## Contact
 liuchw3@mail2.sysu.edu.cn
