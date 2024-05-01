@@ -61,8 +61,9 @@ check and modify the tool paths of tookit.py file (in 'utils' directory).
 Experiment of pum6a framework for different positive and unlable bags datasets.
 
 ```shell
-python run.py experiment --confi $*.toml
+python run.py experiment --config $*.toml
 ```
+for example: python run.py experiment --config log/Internet_pum6a_0.5Freq_88888.toml
 
 ### m6A modification detection
 1.Basecalling
