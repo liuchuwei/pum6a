@@ -38,7 +38,7 @@
    ```
 3.prepare tookit: 
 
-check and modify the tookit.py file (in 'utils' directory).
+check and modify the tool paths of tookit.py file (in 'utils' directory).
     
 ## Usage
 
