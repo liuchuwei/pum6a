@@ -41,7 +41,10 @@
    ```
 2.Install conda environment
    ```shell
-   conda env create -f pum6a.yaml
+   conda create -n pum6a python=3.8
+   conda activate pum6a
+   pip install torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 --index-url https://download.pytorch.org/whl/cu118
+   pip install dask==2023.5.0 h5py==3.10.0 numpy==1.24.3 pandas==2.0.3 scikit-learn==1.3.2 tqdm==4.66.1 toml==0.10.2 statsmodels==0.14.1
    ```
 
 The usage of pum6a require the installation of [tombo](https://github.com/nanoporetech/tombo) environment.
@@ -58,7 +61,7 @@ check and modify the tool paths of tookit.py file (in 'utils' directory).
 Experiment of pum6a framework for different positive and unlable bags datasets.
 
 ```shell
-python run.py experiment --config $*.toml
+python run.py experiment --confi $*.toml
 ```
 
 ### m6A modification detection

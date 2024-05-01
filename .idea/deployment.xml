@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="zdj@192.168.10.106:22 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="zdj@192.168.10.106:22 password" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
+    <option name="confirmBeforeUploading" value="false" />
     <serverData>
       <paths name="zdj@192.168.10.106:22 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/zdj/project/pum6a" local="$PROJECT_DIR$" />
+            <mapping deploy="/project/pum6a" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
