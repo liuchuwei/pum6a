@@ -6,7 +6,7 @@ import itertools
 
 from sklearn import svm
 
-import MI
+from model_factory import MI
 import numpy as np
 from scipy import stats
 
@@ -386,7 +386,7 @@ def train_lsdd(data, args):
     if measure_time:
       t_start = time.time()
 
-    model = MI.UU.LSDD.train(data, width, reg, args)
+    model = model_factory.MI.UU.LSDD.train(data, width, reg, args)
     metadata = {'width': width, 'reg': reg}
 
     if measure_time:
@@ -403,11 +403,11 @@ def train_lsdd(data, args):
   for width, reg in itertools.product(widths, regs):
     errors = []
     for data_train, data_val in MI.cross_validation(data, 5):
-      t = MI.UU.LSDD.LSDD(
+      t = model_factory.MI.UU.LSDD.LSDD(
           np.vstack(MI.extract_bags(data_train, 1)),
           np.vstack(MI.extract_bags(data_train, 0)),
           width, reg)
-      e = MI.UU.LSDD.validation_error(data_val, data_train, width, reg, t)
+      e = model_factory.MI.UU.LSDD.validation_error(data_val, data_train, width, reg, t)
       errors.append(e)
 
     error = np.mean(errors)
@@ -437,8 +437,8 @@ def train_pu_skc(data, args):
 
     bdim = len(data)
     theta = MI.PU.class_prior(data, degree = 1, reg = 1.0e+05)
-    basis = MI.kernel.minimax_basis(data, deg)
-    model = MI.PU.SKC.train(data, basis, bdim, theta, reg, args)
+    basis = model_factory.MI.kernel.minimax_basis(data, deg)
+    model = model_factory.MI.PU.SKC.train(data, basis, bdim, theta, reg, args)
     metadata = {'theta': theta, 'reg': reg, 'degree': deg}
 
     if measure_time:
@@ -494,7 +494,7 @@ def train_dsdd(data, args):
     if measure_time:
       t_start = time.time()
 
-    model = MI.UU.DSDD.train(data, width, reg, args)
+    model = model_factory.MI.UU.DSDD.train(data, width, reg, args)
     metadata = {'width': width, 'reg': reg}
 
     if measure_time:
