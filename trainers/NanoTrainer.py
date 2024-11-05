@@ -50,8 +50,16 @@ class nanoTrainer(object):
 
             if not os.path.exists(cur_dir):
                 os.mkdir(cur_dir)
-
-        self.log = self.config['save_dir'] + "/" + self.suffix + "log.txt"
+        opt_str = str(self.config['optimizer'])
+        opt_str = opt_str.replace(":", "_")
+        opt_str = opt_str.replace("'", "")
+        opt_str = opt_str.replace(" ", "")
+        opt_str = opt_str.replace("{", "")
+        opt_str = opt_str.replace("}", "")
+        opt_str = opt_str.replace(":", "_")
+        opt_str = opt_str.replace(",", "_")
+        self.log = (self.config['save_dir'] + "/" + self.suffix + opt_str
+                     + "log.txt")
 
     def initNegLabel(self):
 
@@ -88,6 +96,7 @@ class nanoTrainer(object):
         """
         Instance method for generating dataloader
         """
+
         self.train_loader = data_utils.DataLoader(self.bag.trainBags,
                                                   batch_size=self.config['batch_size'],
                                                   shuffle=True,
@@ -124,6 +133,23 @@ class nanoTrainer(object):
                     print(f"likehood_loss_p: {loss:>7f}  "
                           f"[{current:>5d}/{size:>5d}]")
 
+            # if int(batch) == 1985:
+            #     # if batch % 5 == 0:
+            #
+            #     bag_auc = self.val_epoch()
+            #     print("batch %s:" % batch)
+            #     print(f"val bag_auc: {(100 * bag_auc):>0.1f}%")
+            #
+            #     ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
+            #     ran_str += self.suffix
+            #     log = "batch,%s, bag_auc,%.3f,id,%s" % (batch, bag_auc, ran_str)
+            #     with open(self.log, 'a+') as f:
+            #         f.write(log + '\n')
+            #     model_path = self.config['save_dir'] + "/" + ran_str + "model.pt"
+            #     torch.save(self.model, model_path)
+
+
+        self.scheduler.step()
         self.refreshNegLabel(bag_scores)
 
     def val_epoch(self):
@@ -133,10 +159,15 @@ class nanoTrainer(object):
         Return:
             bag_loss: likelihood loss of validation dataset
         """
+        # self.model.eval()
+        # bag_loss = self.model.validation(self.bag.valBags)
+        #
+        # return bag_loss
         self.model.eval()
-        bag_loss = self.model.validation(self.bag.valBags)
-
-        return bag_loss
+        bag_pro, bag_y = self.model.decision(self.bag.valBags)
+        bag_y[0] = 1
+        bag_auc = roc_auc_score(bag_y.cpu().detach().numpy(), bag_pro.cpu().detach().numpy())
+        return bag_auc
 
     def tesing(self):
         r"""
@@ -163,42 +194,43 @@ class nanoTrainer(object):
 
         self.initNegLabel()
 
-        best = 88888888
-        patience = 0
+        # best = 88888888
+        # patience = 0
         for t in range(self.config['epochs']):
             if self.config['verbose']:
 
                 print(f"Epoch {t + 1}\n-------------------------------")
 
             self.train_epoch()
-            cost = self.val_epoch()
 
-            if self.config['verbose']:
 
-                print(f"val_bag_loss: {(cost):>0.1f}")
+            bag_auc = self.val_epoch()
+            print(f"val bag_auc: {(100 * bag_auc):>0.1f}%")
 
-            if cost < best:
-                best = cost
-                patience = 0
-            else:
-                patience += 1
+            ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
+            ran_str += self.suffix
+            model_path = self.config['save_dir'] + "/" + ran_str + "model.pt"
+            torch.save(self.model, model_path)
+            # cost = self.val_epoch()
+            #
+            # if self.config['verbose']:
+            #
+            #     print(f"val_bag_loss: {(cost):>0.1f}")
+            #
+            # if cost < best:
+            #     best = cost
+            #     patience = 0
+            # else:
+            #     patience += 1
+            #
+            # if patience == self.config['early_stopping']:
+            #     break
 
-            if patience == self.config['early_stopping']:
-                break
+        bag_auc = self.tesing()
+        print(f"test bag_auc: {(100 * bag_auc):>0.1f}%")
 
         print("Finish Training!")
 
-        bag_auc = self.tesing()
-
-        print(f"bag_auc: {(100 * bag_auc):>0.1f}%")
-
-        ran_str = ''.join(random.sample(string.ascii_letters + string.digits, 5)) + "_"
-        ran_str += self.suffix
-        log = "bag_auc,%.3f,id,%s" % (bag_auc, ran_str)
-        with open(self.log, 'a+') as f:
-            f.write(log + '\n')
-        model_path = self.config['save_dir'] + "/" + ran_str + "model.pt"
-        torch.save(self.model, model_path)
 
 
     def run(self):

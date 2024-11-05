@@ -1,0 +1,12 @@
+output="result/293T_model_toy/293_3_toy"
+
+[dataload]
+    signal="result/caNano/HEK293T_4/test.toy.tsv"
+    motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
+    min_read=3
+    inference=true
+
+[model]
+#    model_path = 'result/293T_model_toy/hV0Pn_241105125649_88888888_ran_model.pt'
+    model_path = 'result/293T_model/293_zeroP.pt'
+    device = 'cuda'

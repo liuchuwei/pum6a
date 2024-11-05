@@ -1,0 +1,52 @@
+seed = 88888888
+
+[dataload]
+
+    signal="result/caNano/HEK293T_1/train.toy.tsv"
+    ground_truth="dataset/Nano/HEK293T_GroundTruth.txt"
+    motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
+    min_read=0
+    inference=false
+    transit = "result/293T_model_toy/"
+
+[model]
+
+    model_chosen = 'Nanopum6a'
+    device = 'cuda'
+
+    [model.feature_extractor]
+    type = 'linear'
+    n_features = 40
+    dropout_rate = 0.1
+    hidden_neurons = [96] # 96
+    batch_norm = false
+    hidden_activation = 'relu'
+
+    [model.attention]
+    L=96  # 96 Attention model_factory input nodes
+    D=48  # 48 Attention model_factory intermediate nodes
+    K=1  # Attention model_factory output nodes
+
+
+[trainer]
+
+    trainer_chosen='nanoTrainer'
+    seed = 88888888 # 88888888
+    freq = 'ran'
+    device = 'cuda'
+    save_dir = 'result/293T_model_toy/'
+
+    epochs = 1
+    batch_size = 128 # 128 [256 & 0.001 :0.821]
+    early_stopping = 3
+    verbose = true
+
+    [trainer.optimizer]
+    batch_size = 128 # 128
+    opt = 'AdamW'  # AdamW
+    lr = 0.0025 # [0.83: 0.001], [0.82: 0.002], [0.835: 0.0025], [0.835:0.003], [0.833: 0.005],  [0.82.6: 0.0075],
+    weight_decay=1e-05 # 1e-05 [5e-04 & 0.0025: 0.834] [1e-04 & 0.0025: 0.834] [5e-06 & 0.0025: 0.835]
+    amsgrad=true
+    opt_scheduler='step'
+    opt_decay_step=1
+    opt_decay_rate=0.1
