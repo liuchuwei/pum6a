@@ -65,6 +65,24 @@ python run.py experiment --config $*.toml
 ```
 for example: python run.py experiment --config log/Internet_pum6a_0.5Freq_88888.toml
 
+### Quick instruction for toy samples
+Due to the substantial size of the Ont-seq data and the considerable time required for data preprocessing,
+we are providing toy samples here to enable users to swiftly test the pum6a model for m6a detection in Ont-seq data
+
+--> train model
+   ```shell
+   python run.py train --config train_toy.toml
+   ```
+
+--> predict
+   ```shell
+   python run.py predict --config predict_toy.toml
+   ```
+--> evaluate
+   ```shell
+   python run.py evaluate --config evaluate_toy.toml
+   ```
+
 ### m6A modification detection
 1.Basecalling
    ```shell
