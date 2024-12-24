@@ -5,17 +5,10 @@ import torch
 
 from model_factory.PUM6A import pum6a
 from model_factory.nano_PUM6a import Nanopum6a
-from model_factory.PUMA import puma
-from model_factory.IAE import iAE
-from model_factory.PUIF import puIF
-from model_factory.RandomForest import RF
 from typing import *
 
 from trainers.NanoTrainer import nanoTrainer
-from trainers.RandomFroestTrainer import RF_Trainer
 from utils.bag_utils import Bags
-from trainers.AdanTrainer import adanTrainer
-from trainers.PUIF_Trainer import puIF_Trainer
 from trainers.BaseTrainer import baseTrainer
 
 import numpy as np

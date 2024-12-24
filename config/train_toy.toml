@@ -2,8 +2,8 @@ seed = 88888888
 
 [dataload]
 
-    signal="result/caNano/HEK293T_1/train.toy.tsv"
-    ground_truth="dataset/Nano/HEK293T_GroundTruth.txt"
+    signal="dataset/NanoToy/train.toy.tsv"
+    ground_truth="dataset/NanoToy/HEK293T_GroundTruth.txt"
     motif=  ["AAACA", "AAACT", "AGACC", "GAACA", "GAACT", "GGACC", "AAACC", "AGACA", "AGACT", "GAACC", "GGACA", "GGACT"]
     min_read=0
     inference=false

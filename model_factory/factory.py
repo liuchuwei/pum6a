@@ -6,7 +6,6 @@ import itertools
 
 from sklearn import svm
 
-from model_factory import MI
 import numpy as np
 from scipy import stats
 
@@ -378,140 +377,6 @@ class AutoEncoder(object):
             raise ValueError('invalid autoencoder type!')
 
 
-def train_lsdd(data, args):
-  widths = [1.0e-2, 1.0e-4, 1.0e-6]
-  regs = [1.0, 1.0e-03, 1.0e-06]
-
-  def train(data, width, reg, measure_time = False):
-    if measure_time:
-      t_start = time.time()
-
-    model = model_factory.MI.UU.LSDD.train(data, width, reg, args)
-    metadata = {'width': width, 'reg': reg}
-
-    if measure_time:
-      t_end = time.time()
-      print("#  elapsed time = {}".format(t_end - t_start))
-
-    return model, metadata
-
-  # cross validation
-  best_param = {}
-  best_error = np.inf
-  if args['verbose']:
-    print("# *** Cross Validation ***")
-  for width, reg in itertools.product(widths, regs):
-    errors = []
-    for data_train, data_val in MI.cross_validation(data, 5):
-      t = model_factory.MI.UU.LSDD.LSDD(
-          np.vstack(MI.extract_bags(data_train, 1)),
-          np.vstack(MI.extract_bags(data_train, 0)),
-          width, reg)
-      e = model_factory.MI.UU.LSDD.validation_error(data_val, data_train, width, reg, t)
-      errors.append(e)
-
-    error = np.mean(errors)
-
-    if args['verbose']:
-      print("#  width = {:.3e} / reg = {:.3e} / error = {:.3e}".format(width, reg, error))
-
-    if error < best_error:
-      best_error = error
-      best_param = {'width': width, 'reg': reg}
-
-  if args['verbose']:
-    print("# {}".format('-'*80))
-
-  model, metadata = train(data, best_param['width'], best_param['reg'], measure_time=True)
-
-  return model, best_param
-
-
-def train_pu_skc(data, args):
-  degs = [1, 2, 3]
-  regs = [1.0, 1.0e-03, 1.0e-06]
-
-  def train(data, deg, reg, measure_time = False):
-    if measure_time:
-      t_start = time.time()
-
-    bdim = len(data)
-    theta = MI.PU.class_prior(data, degree = 1, reg = 1.0e+05)
-    basis = model_factory.MI.kernel.minimax_basis(data, deg)
-    model = model_factory.MI.PU.SKC.train(data, basis, bdim, theta, reg, args)
-    metadata = {'theta': theta, 'reg': reg, 'degree': deg}
-
-    if measure_time:
-      t_end = time.time()
-      print("#  elapsed time = {}".format(t_end - t_start))
-
-    return model, metadata
-
-  # cross validation
-  best_param = {'degree': None, 'reg': None}
-  best_error = np.inf
-  if args['verbose']:
-    print("# *** Cross Validation ***")
-  for deg, reg in itertools.product(degs, regs):
-    try:
-      errors = []
-      for data_train, data_val in MI.cross_validation(data, 5):
-        clf, metadata = train(data_train, deg, reg)
-        e = MI.PU.prediction_error(data_val, clf, metadata['theta'])
-        errors.append(e)
-
-      error = np.mean(errors)
-
-      if args['verbose']:
-        print("#  degree = {} / reg = {:.3e} : theta = {:.3e} / error = {:.3e}".format(deg, reg, metadata['theta'], error))
-
-      if error < best_error:
-        best_error = error
-        best_param = {'degree': deg, 'reg': reg}
-
-    except ValueError:
-      # sometimes fails for large degree
-      if args['verbose']:
-        print("#  degree = {} / reg = {:.3e} : error = NaN".format(deg, reg))
-
-  if args['verbose']:
-    print("# {}".format('-'*80))
-
-  # training using the best parameter
-  model, metadata = train(data, best_param['degree'], best_param['reg'], measure_time = True)
-
-  if args['verbose']:
-    print("#  estimated class prior = {:.6f}".format(metadata['theta']))
-
-  return model, best_param
-
-
-def train_dsdd(data, args):
-  widths = [1.0e-2, 1.0e-4, 1.0e-6]
-  regs = [1.0, 1.0e-03, 1.0e-06]
-
-  def train(data, width, reg, measure_time = False):
-    if measure_time:
-      t_start = time.time()
-
-    model = model_factory.MI.UU.DSDD.train(data, width, reg, args)
-    metadata = {'width': width, 'reg': reg}
-
-    if measure_time:
-      t_end = time.time()
-      print("#  elapsed time = {}".format(t_end - t_start))
-
-    return model, metadata
-
-
-  model, metadata = train(data, 1.0e-2, 1.0e-2, measure_time=True)
-
-  return model
-
-
-pca_dim = 30
-
-
 def reliable_negative_bag_idx(bags, uidx, w, N):
   sorted_confs = sorted(list(zip(uidx, w[uidx])), key=lambda x:x[1], reverse=True)
   return [i for i, _ in sorted_confs[:N]]
@@ -569,17 +434,6 @@ def pumil_clf_wrapper(clf, n_dist, learning_phase = False):
     # N.B. fix the confidence of test bag to 1
     return lambda instances: clf(witness(instances, 1))
 
-
-def affinity(clf, conf, bags, uidx, nidx):
-  # evaluate F-score on unlabeled set
-  # regard "reliable negative bags" as negative set, and the other bags as positive set
-  pidx = list(set(uidx) - set(nidx))
-  pred = np.array([clf(bags[i], conf[i]) for i in pidx + nidx])
-  true = np.r_[np.ones(len(pidx)), -1 * np.ones(len(nidx))]
-
-  return MI.f_score(pred, true)
-
-
 def train_pumil_clf(bags, pidx, uidx, w, NL, learning_phase = False):
   # top-{NL} reliable negative bags
   relnidx = reliable_negative_bag_idx(bags, uidx, w, NL)
@@ -599,66 +453,3 @@ def train_pumil_clf(bags, pidx, uidx, w, NL, learning_phase = False):
 
   else:
     return clf_
-
-
-def pumil(bags, NL, NU, args):
-  L = 2      # the number of confidence vectors
-  # L = 100      # the number of confidence vectors
-  c = 0.1      # clone factor
-  T = 1.0e-08  # threshold (eps)
-  M = 1e+10    # max iteration limit
-
-  # list of indices
-  pidx = [i for i, B in enumerate(bags) if B['label'][0] == 1]
-  uidx = [i for i, B in enumerate(bags) if B['label'][0] == 0]
-
-  # initialization
-  W = np.ones((L, NL + NU))
-  for i in range(L):
-    for j in uidx:
-      # assign random confidences to unlabeled bags
-      W[i][j] = np.random.uniform(0, 1)
-
-  # training phase
-  f = np.zeros(L)   # affinity scores for each confidence vector
-  t = 1             # current epoch
-  delta = 0         # the difference between best affinities of last and current epoch
-  best_score = 0    # the best affinity score of the last epoch
-  best_conf = None  # the best confidence weight vector
-
-  while (t == 1) or (t <= M and delta >= T):
-    for i in range(L):
-      # obtain classifier from confidence vector
-      clf, relnidx = train_pumil_clf(bags, pidx, uidx, W[i], NL, learning_phase = True)
-      # calculate affinity scores
-      f[i] = affinity(clf, W[i], bags, uidx, relnidx)
-
-    best = f.argmax()
-
-    # antibody clone
-    for i in range(L):
-      if i != best and stats.bernoulli(c) == 1:
-        W[i] = W[best]
-
-    # antibody mutation
-    V = W + np.multiply(
-      (W - np.tile(W[best], (L, 1))).T,
-      (np.ones(L) - f) * np.random.uniform(0, 1, size=L)
-    ).T
-
-    # antibody update (whether to accept mutation or not)
-    for i in range(L):
-      # evaluate proposed confidence vector
-      clf, relnidx = train_pumil_clf(bags, pidx, uidx, V[i], NL, learning_phase = True)
-      f_ = affinity(clf, V[i], bags, uidx, relnidx)
-      if f_ > f[i]:
-        W[i] = V[i]
-        f[i] = f_
-
-    delta = f[best] - best_score
-    best_score = f[best]
-    best_conf  = W[best]
-
-    t += 1
-
-  return train_pumil_clf(bags, pidx, uidx, best_conf, NL)
