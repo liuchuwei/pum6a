@@ -156,3 +156,4 @@ Distributed under the MIT License. See LICENSE for more information.
 liuchw3@mail2.sysu.edu.cn
 
 ## Reference
+Liu, C., Liang, H., Wan, A.H. et al. Decoding the m6A epitranscriptomic landscape for biotechnological applications using a direct RNA sequencing approach. Nat Commun 16, 798 (2025). https://doi.org/10.1038/s41467-025-56173-6
